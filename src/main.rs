@@ -16,7 +16,7 @@ fn main() {
             println!("{obj:#?}");
         }
 
-        Some("csv") => match decrypt_mm2_asset(cli.file) {
+        Some("csv" | "txt") => match decrypt_mm2_asset(cli.file) {
             Ok(s) => println!("{s}"),
             Err(err) => println!("{err:?}"),
         },
