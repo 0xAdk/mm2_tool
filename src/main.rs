@@ -50,7 +50,7 @@ enum AssetDecryptError {
     InvalidUtf8Data(#[from] std::str::Utf8Error),
 }
 
-fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<String, AssetDecryptError> {
+fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<Vec<u8>, AssetDecryptError> {
     {
         let data = bytemuck::try_cast_slice_mut(&mut data)?;
         xxtea::decrypt(data, MM2_ASSET_KEY).unwrap();
@@ -66,7 +66,7 @@ fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<String, AssetDecryptError> {
         }
     }
 
-    Ok(std::str::from_utf8(&data)?.to_string())
+    Ok(data)
 }
 
 fn encrypt_mm2_asset(mut data: Vec<u8>) -> Result<Vec<u8>, AssetDecryptError> {
