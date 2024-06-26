@@ -1,5 +1,6 @@
 use std::num::Wrapping;
 
+#[derive(Debug, Clone, Copy)]
 pub enum TeaMode {
     Encrypt,
     Decrypt,
@@ -13,9 +14,10 @@ pub fn encrypt(data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> {
     crypt(TeaMode::Encrypt, data, key)
 }
 
-const TEA_DELTA: Wrapping<u32> = Wrapping(0x9e3779b9);
+const TEA_DELTA: Wrapping<u32> = Wrapping(0x9e_37_79_b9);
 
 // From the improved version of the reference code in https://w.wiki/AU4y
+#[allow(clippy::many_single_char_names)]
 pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> {
     if data.len() < 2 {
         return Err(());
@@ -50,7 +52,7 @@ pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> 
         }
 
         TeaMode::Decrypt => {
-            let mut sum = Wrapping(rounds as u32) * TEA_DELTA;
+            let mut sum = Wrapping(u32::try_from(rounds).unwrap()) * TEA_DELTA;
             let mut y = v[0];
             for _ in 0..rounds {
                 let e = (sum >> 2) & Wrapping(3);

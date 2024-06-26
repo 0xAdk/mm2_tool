@@ -1,3 +1,5 @@
+#![deny(clippy::pedantic)]
+
 mod cli;
 mod haxe_obj;
 mod xxtea;
@@ -20,7 +22,7 @@ fn main() {
             if cli.encrypt {
                 let data = std::fs::read_to_string(cli.file).unwrap();
 
-                match encrypt_mm2_asset(data) {
+                match encrypt_mm2_asset(&data) {
                     Err(err) => panic!("{err:?}"),
                     Ok(data) => {
                         std::fs::write("output.encrypt.csv", data).unwrap();
@@ -70,7 +72,7 @@ fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<String, AssetDecryptError> {
     Ok(std::str::from_utf8(&data)?.to_string())
 }
 
-fn encrypt_mm2_asset(data: String) -> Result<Vec<u8>, AssetDecryptError> {
+fn encrypt_mm2_asset(data: &str) -> Result<Vec<u8>, AssetDecryptError> {
     let mut data: Vec<u8> = data.bytes().collect();
 
     {

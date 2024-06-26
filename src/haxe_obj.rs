@@ -9,6 +9,7 @@ use winnow::{
     Parser, Stateful,
 };
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Object {
     Int(i32),
@@ -20,6 +21,7 @@ pub enum Object {
     Date(String),
     StringMap(BTreeMap<String, Option<Object>>),
     IntMap(BTreeMap<i32, Option<Object>>),
+    #[allow(clippy::enum_variant_names)]
     ObjectMap(BTreeMap<Object, Option<Object>>),
     Bytes(Vec<u8>),
     Exception(String),
@@ -53,9 +55,9 @@ pub fn parse(input: &mut &str) -> Result<Option<Object>, ContextError> {
     parse_object
         .parse(Input {
             input,
-            state: &Default::default(),
+            state: &RwLock::default(),
         })
-        .map_err(|err| err.into_inner())
+        .map_err(winnow::error::ParseError::into_inner)
 }
 
 fn parse_object(data: &mut Input) -> winnow::PResult<Option<Object>> {
