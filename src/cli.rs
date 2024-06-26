@@ -10,6 +10,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// XXTEA encryption and decryption
     Crypt {
         // TODO: make this optional + global
         // #[arg(short, long, global = true)]
@@ -20,6 +21,7 @@ pub enum Command {
         command: CryptCommand,
     },
 
+    /// Haxe serialization and deserialization
     Haxe {
         // TODO: make this optional + global
         // #[arg(short, long, global = true)]
