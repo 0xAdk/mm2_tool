@@ -21,8 +21,8 @@ pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> 
         return Err(());
     }
 
-    let v = bytemuck::cast_slice_mut::<_, Wrapping<_>>(data);
-    let key = bytemuck::cast_ref::<_, [Wrapping<u32>; 4]>(key);
+    let v: &mut [Wrapping<u32>] = bytemuck::cast_slice_mut(data);
+    let key: &[Wrapping<u32>; 4] = bytemuck::cast_ref(key);
 
     let mx = move |y, z, sum, p, e: Wrapping<u32>| {
         ((z >> 5 ^ y << 2) + (y >> 3 ^ z << 4)) ^ ((sum ^ y) + (key[(p & 3) ^ e.0 as usize] ^ z))
@@ -34,9 +34,8 @@ pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> 
             let mut sum = Wrapping(0);
             let mut z = v[v.len() - 1];
             for _ in 0..rounds {
-                let e = (sum >> 2) & Wrapping(3);
-
                 sum += TEA_DELTA;
+                let e = (sum >> 2) & Wrapping(3);
                 let mut p = 0;
                 while p < v.len() - 1 {
                     let y = v[p + 1];
@@ -55,7 +54,6 @@ pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> 
             let mut y = v[0];
             for _ in 0..rounds {
                 let e = (sum >> 2) & Wrapping(3);
-
                 let mut p = v.len() - 1;
                 while p > 0 {
                     let z = v[p - 1];
