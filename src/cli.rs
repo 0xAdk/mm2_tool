@@ -12,22 +12,12 @@ pub struct Cli {
 pub enum Command {
     /// XXTEA encryption and decryption
     Crypt {
-        // TODO: make this optional + global
-        // #[arg(short, long, global = true)]
-        #[arg(short, long)]
-        output: PathBuf,
-
         #[command(subcommand)]
         command: CryptCommand,
     },
 
     /// Haxe serialization and deserialization
     Haxe {
-        // TODO: make this optional + global
-        // #[arg(short, long, global = true)]
-        #[arg(short, long)]
-        output: PathBuf,
-
         #[command(subcommand)]
         command: HaxeCommand,
     },
@@ -35,12 +25,32 @@ pub enum Command {
 
 #[derive(Subcommand)]
 pub enum CryptCommand {
-    Encrypt { file: PathBuf },
-    Decrypt { file: PathBuf },
+    Encrypt {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf
+    },
+    Decrypt {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf
+    },
 }
 
 #[derive(Subcommand)]
 pub enum HaxeCommand {
-    Serialize { file: PathBuf },
-    Deserialize { file: PathBuf },
+    Serialize {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf
+    },
+    Deserialize {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf
+    },
 }

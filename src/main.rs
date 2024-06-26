@@ -11,26 +11,28 @@ fn main() {
     let cli = <cli::Cli as clap::Parser>::parse();
 
     match cli.command {
-        cli::Command::Crypt {
-            command, output, ..
-        } => match command {
-            cli::CryptCommand::Encrypt { file, .. } => {
+        cli::Command::Crypt { command, .. } => match command {
+            cli::CryptCommand::Encrypt { file, output, .. } => {
                 let data = std::fs::read(file).unwrap();
                 let data = encrypt_mm2_asset(data).unwrap_or_else(|err| panic!("{err:?}"));
                 std::fs::write(output, data).unwrap();
             }
 
-            cli::CryptCommand::Decrypt { file, .. } => {
+            cli::CryptCommand::Decrypt { file, output, .. } => {
                 let data = std::fs::read(file).unwrap();
                 let data = decrypt_mm2_asset(data).unwrap_or_else(|err| panic!("{err:?}"));
                 std::fs::write(output, data).unwrap();
             }
         },
-        cli::Command::Haxe { command, output, .. } => match command {
-            cli::HaxeCommand::Serialize { file: _, .. } => {
+
+        cli::Command::Haxe { command, .. } => match command {
+            cli::HaxeCommand::Serialize {
+                file: _, output: _, ..
+            } => {
                 todo!("serializing files isn't implemented yet")
             }
-            cli::HaxeCommand::Deserialize { file, .. } => {
+
+            cli::HaxeCommand::Deserialize { file, output, .. } => {
                 let data = std::fs::read_to_string(file).unwrap();
                 let data = &mut data.as_str();
 
