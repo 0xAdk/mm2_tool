@@ -16,10 +16,28 @@ fn main() {
             println!("{obj:#?}");
         }
 
-        Some("csv" | "txt") => match decrypt_mm2_asset(cli.file) {
-            Ok(s) => println!("{s}"),
-            Err(err) => println!("{err:?}"),
-        },
+        Some("csv" | "txt") => {
+            if cli.encrypt {
+                let data = std::fs::read_to_string(cli.file).unwrap();
+
+                match encrypt_mm2_asset(data) {
+                    Err(err) => panic!("{err:?}"),
+                    Ok(data) => {
+                        std::fs::write("output.encrypt.csv", data).unwrap();
+                    }
+                }
+            } else {
+                let data = std::fs::read(cli.file).unwrap();
+
+                match decrypt_mm2_asset(data) {
+                    Err(err) => panic!("{err:?}"),
+                    Ok(s) => {
+                        print!("{s}");
+                    }
+                }
+            }
+        }
+
         _ => panic!("Unsupported file type"),
     }
 }
@@ -33,8 +51,7 @@ enum AssetDecryptError {
     InvalidUtf8Data(#[from] std::str::Utf8Error),
 }
 
-fn decrypt_mm2_asset(file: std::path::PathBuf) -> Result<String, AssetDecryptError> {
-    let mut data = std::fs::read(file).unwrap();
+fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<String, AssetDecryptError> {
     {
         let data = bytemuck::try_cast_slice_mut(&mut data)?;
         xxtea::decrypt(data, MM2_ASSET_KEY).unwrap();
@@ -51,4 +68,34 @@ fn decrypt_mm2_asset(file: std::path::PathBuf) -> Result<String, AssetDecryptErr
     }
 
     Ok(std::str::from_utf8(&data)?.to_string())
+}
+
+fn encrypt_mm2_asset(data: String) -> Result<Vec<u8>, AssetDecryptError> {
+    let mut data: Vec<u8> = data.bytes().collect();
+
+    {
+        data.resize(data.len().next_multiple_of(4), 0);
+        let data = bytemuck::try_cast_slice_mut(&mut data)?;
+        xxtea::encrypt(data, MM2_ASSET_KEY).unwrap();
+    }
+
+    Ok(data)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn xxtea_roundtrip() {
+        const KEY: &[u8; 16] = b"aj3fk29dl309f845";
+        let data = [0xdead, 0xbeef];
+
+        let mut same_data = data;
+        xxtea::encrypt(&mut same_data, KEY).unwrap();
+        xxtea::decrypt(&mut same_data, KEY).unwrap();
+
+        assert_eq!(data.len(), same_data.len());
+        assert_eq!(data, same_data.as_slice());
+    }
 }
