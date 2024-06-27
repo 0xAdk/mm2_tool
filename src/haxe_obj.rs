@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::RwLock};
+use std::{collections::BTreeMap, convert::Infallible, fmt::Debug, sync::RwLock};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use winnow::{
@@ -10,34 +10,92 @@ use winnow::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Clone, PartialEq, PartialOrd)]
 pub enum Object {
+    Null,
+
+    Bool(bool),
     Int(i32),
     Float(f64),
-    Bool(bool),
+
     String(String),
-    List(Vec<Option<Object>>),
-    Array(Vec<Option<Object>>),
     Date(String),
-    StringMap(BTreeMap<String, Option<Object>>),
-    IntMap(BTreeMap<i32, Option<Object>>),
-    #[allow(clippy::enum_variant_names)]
-    ObjectMap(BTreeMap<Object, Option<Object>>),
     Bytes(Vec<u8>),
-    Exception(String),
+
+    Array(Vec<Object>),
+    List(Vec<Object>),
+
+    StringMap(BTreeMap<String, Object>),
+    IntMap(BTreeMap<i32, Object>),
+    #[allow(clippy::enum_variant_names)]
+    ObjectMap(BTreeMap<Object, Object>),
+
     Struct {
-        fields: BTreeMap<String, Option<Object>>,
+        fields: BTreeMap<String, Object>,
     },
+
     Class {
         name: String,
-        fields: BTreeMap<String, Option<Object>>,
+        fields: BTreeMap<String, Object>,
     },
+
     Enum {
         name: String,
         constructor: String,
-        fields: Vec<Option<Object>>,
+        fields: Vec<Object>,
     },
-    Custom(String),
+
+    Exception(Box<Object>),
+    Custom(Infallible),
+}
+
+impl Debug for Object {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Object::Null => f.write_str("null"),
+            Object::Bool(value) => write!(f, "{value:?}"),
+            Object::Int(value) => write!(f, "{value:?}"),
+            Object::Float(value) => write!(f, "{value:?}"),
+            Object::String(value) => write!(f, "{value:?}"),
+            Object::Date(_) => todo!(),
+            Object::Bytes(_) => todo!(),
+            Object::Array(value) | Object::List(value) => {
+                f.debug_list().entries(value.iter()).finish()
+            }
+            Object::StringMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Object::IntMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Object::ObjectMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Object::Struct { fields } => {
+                f.write_str("struct")?;
+                let mut f = f.debug_struct("");
+                for (field, value) in fields {
+                    f.field(field, value);
+                }
+                f.finish()
+            }
+            Object::Class { name, fields } => {
+                f.write_str("class ")?;
+                let mut f = f.debug_struct(name);
+                for (field, value) in fields {
+                    f.field(field, value);
+                }
+                f.finish()
+            }
+            Object::Enum {
+                name,
+                constructor,
+                fields,
+            } => {
+                let mut f = f.debug_tuple(format!("{name}.{constructor}").as_str());
+                for field in fields {
+                    f.field(field);
+                }
+                f.finish()
+            }
+            Object::Exception(value) => write!(f, "{value:?}"),
+            Object::Custom(_) => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -46,12 +104,9 @@ struct ParserState {
     object_cache: Vec<Object>,
 }
 
-// #[derive(Debug, Clone)]
-// struct ParserStateRef<'s>(&'s Cell<ParserState>);
-
 type Input<'st> = Stateful<&'st str, &'st RwLock<ParserState>>;
 
-pub fn parse(input: &mut &str) -> Result<Option<Object>, ContextError> {
+pub fn parse(input: &mut &str) -> Result<Object, ContextError> {
     parse_object
         .parse(Input {
             input,
@@ -60,11 +115,11 @@ pub fn parse(input: &mut &str) -> Result<Option<Object>, ContextError> {
         .map_err(winnow::error::ParseError::into_inner)
 }
 
-fn parse_object(data: &mut Input) -> winnow::PResult<Option<Object>> {
-    Ok(Some(match data.bytes().next().unwrap() {
+fn parse_object(data: &mut Input) -> winnow::PResult<Object> {
+    Ok(match data.bytes().next().unwrap() {
         b'n' => {
             data.input = &data[1..];
-            return Ok(None);
+            return Ok(Object::Null);
         }
         b'z' => {
             data.input = &data[1..];
@@ -104,11 +159,12 @@ fn parse_object(data: &mut Input) -> winnow::PResult<Option<Object>> {
         b'o' => parse_struct(data)?,
         b'c' => parse_class(data)?,
         b'w' => parse_enum(data)?,
+        b'j' => todo!("https://github.com/HaxeFoundation/haxe/blob/dc1a43dc52f98b9c480f68264885c6155e570f3e/std/haxe/Unserializer.hx#L325"),
         b'R' => Object::String(parse_string_cache_reference(data)?),
         b'r' => parse_int_cache_reference(data)?,
         b'C' => parse_custom(data)?,
         c => todo!("{}", c as char),
-    }))
+    })
 }
 
 fn parse_int(data: &mut Input) -> winnow::PResult<Object> {
@@ -146,7 +202,10 @@ fn parse_list(data: &mut Input) -> winnow::PResult<Object> {
         items.push(item);
     }
     'h'.parse_next(data)?;
-    Ok(Object::List(items))
+
+    let obj = Object::List(items);
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
 
 fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
@@ -157,7 +216,7 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
             'u'.parse_next(data)?;
             let count: usize = dec_uint.parse_next(data)?;
             for _ in 0..count {
-                items.push(None);
+                items.push(Object::Null);
             }
         } else {
             let item = parse_object(data)?;
@@ -165,7 +224,9 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
         }
     }
     'h'.parse_next(data)?;
-    Ok(Object::Array(items))
+    let obj = Object::Array(items);
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
 
 fn parse_date(_data: &mut Input) -> winnow::PResult<Object> {
@@ -186,7 +247,9 @@ fn parse_string_map(data: &mut Input) -> winnow::PResult<Object> {
         map.insert(key, value);
     }
     'h'.parse_next(data)?;
-    Ok(Object::StringMap(map))
+    let obj = Object::StringMap(map);
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
 
 fn parse_int_map(data: &mut Input) -> winnow::PResult<Object> {
@@ -199,7 +262,9 @@ fn parse_int_map(data: &mut Input) -> winnow::PResult<Object> {
         map.insert(key, value);
     }
     'h'.parse_next(data)?;
-    Ok(Object::IntMap(map))
+    let obj = Object::IntMap(map);
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
 
 fn parse_object_map(_data: &mut Input) -> winnow::PResult<Object> {
@@ -223,7 +288,9 @@ fn parse_bytes(data: &mut Input) -> winnow::PResult<Object> {
     ':'.parse_next(data)?;
     let bytes = take(len).parse_next(data)?;
     let bytes = STANDARD.decode(bytes).unwrap();
-    Ok(Object::Bytes(bytes))
+    let obj = Object::Bytes(bytes);
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
 
 fn parse_exception(_data: &mut Input) -> winnow::PResult<Object> {
@@ -267,7 +334,6 @@ fn parse_class(data: &mut Input) -> winnow::PResult<Object> {
 fn parse_enum(data: &mut Input) -> winnow::PResult<Object> {
     'w'.parse_next(data)?;
     let name = parse_string(data)?;
-    // println!("enter enum {enum_name}");
     let constructor = parse_string(data)?;
     ':'.parse_next(data)?;
     let mut fields = Vec::new();
@@ -276,7 +342,6 @@ fn parse_enum(data: &mut Input) -> winnow::PResult<Object> {
         let field = parse_object(data)?;
         fields.push(field);
     }
-    // println!("exit enum {enum_name}");
 
     let obj = Object::Enum {
         name,

@@ -37,7 +37,7 @@ fn main() {
                 let data = &mut data.as_str();
 
                 let obj = haxe_obj::parse(data).unwrap();
-                std::fs::write(output, std::format!("{obj:?}")).unwrap();
+                std::fs::write(output, std::format!("{obj:#?}")).unwrap();
             }
         },
     }
