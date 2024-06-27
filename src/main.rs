@@ -2,7 +2,7 @@
 
 mod cli;
 mod crypt;
-mod haxe_obj;
+mod haxe;
 mod xxtea;
 
 const MM2_ASSET_KEY: &[u8; 16] = b"aj3fk29dl309f845";
@@ -36,7 +36,7 @@ fn main() {
                 let data = std::fs::read_to_string(file).unwrap();
                 let data = &mut data.as_str();
 
-                let obj = haxe_obj::parse(data).unwrap();
+                let obj = haxe::from_str(data).unwrap();
                 std::fs::write(output, std::format!("{obj:#?}")).unwrap();
             }
         },
