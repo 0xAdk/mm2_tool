@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-
 use clap::Subcommand;
+
+use std::path::PathBuf;
 
 const MM2_ASSET_KEY: &str = "aj3fk29dl309f845";
 

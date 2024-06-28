@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use crate::crypt;
+use crate::crypt::Cli as CryptCli;
+use crate::haxe::Cli as HaxeCli;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -15,34 +16,15 @@ pub const MM2_SAVE_KEY: &str = "HXl;kjsaf4982097";
 #[derive(Subcommand)]
 pub enum Command {
     #[command(flatten)]
-    Crypt(crypt::Cli),
+    Crypt(CryptCli),
 
-    /// Haxe serialization and deserialization
-    Haxe {
-        #[command(subcommand)]
-        command: HaxeCommand,
-    },
+    #[command(flatten)]
+    Haxe(HaxeCli),
 
     /// Manege mm2 save games
     Savetool {
         #[command(subcommand)]
         command: SaveToolCommand,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum HaxeCommand {
-    Serialize {
-        #[arg(short, long)]
-        output: PathBuf,
-
-        file: PathBuf,
-    },
-    Deserialize {
-        #[arg(short, long)]
-        output: PathBuf,
-
-        file: PathBuf,
     },
 }
 

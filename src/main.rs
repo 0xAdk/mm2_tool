@@ -10,22 +10,7 @@ fn main() {
 
     match cli.command {
         cli::Command::Crypt(cli) => crypt::run(cli),
-
-        cli::Command::Haxe { command, .. } => match command {
-            cli::HaxeCommand::Serialize {
-                file: _, output: _, ..
-            } => {
-                todo!("serializing files isn't implemented yet")
-            }
-
-            cli::HaxeCommand::Deserialize { file, output, .. } => {
-                let data = std::fs::read_to_string(file).unwrap();
-                let data = &mut data.as_str();
-
-                let obj = haxe::from_str(data).unwrap();
-                std::fs::write(output, std::format!("{obj:#?}")).unwrap();
-            }
-        },
+        cli::Command::Haxe(cli) => haxe::run(cli),
 
         cli::Command::Savetool { command, .. } => match command {
             cli::SaveToolCommand::Save {
