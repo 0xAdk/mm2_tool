@@ -5,22 +5,20 @@ mod crypt;
 mod haxe;
 mod xxtea;
 
-const MM2_ASSET_KEY: &[u8; 16] = b"aj3fk29dl309f845";
-
 fn main() {
     let cli = <cli::Cli as clap::Parser>::parse();
 
     match cli.command {
-        cli::Command::Crypt { command, .. } => match command {
+        cli::Command::Crypt { command, key, .. } => match command {
             cli::CryptCommand::Encrypt { file, output, .. } => {
                 let data = std::fs::read(file).unwrap();
-                let data = encrypt_mm2_asset(data).unwrap_or_else(|err| panic!("{err:?}"));
+                let data = encrypt_with_padding(data, &key).unwrap_or_else(|err| panic!("{err:?}"));
                 std::fs::write(output, data).unwrap();
             }
 
             cli::CryptCommand::Decrypt { file, output, .. } => {
                 let data = std::fs::read(file).unwrap();
-                let data = decrypt_mm2_asset(data).unwrap_or_else(|err| panic!("{err:?}"));
+                let data = decrypt_with_padding(data, &key).unwrap_or_else(|err| panic!("{err:?}"));
                 std::fs::write(output, data).unwrap();
             }
         },
@@ -52,10 +50,10 @@ enum AssetDecryptError {
     InvalidUtf8Data(#[from] std::str::Utf8Error),
 }
 
-fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<Vec<u8>, AssetDecryptError> {
+fn decrypt_with_padding(mut data: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, AssetDecryptError> {
     {
         let data = bytemuck::try_cast_slice_mut(&mut data)?;
-        xxtea::decrypt(data, MM2_ASSET_KEY).unwrap();
+        xxtea::decrypt(data, key).unwrap();
     }
 
     // pop at most 4 nul padding bytes from the end
@@ -71,11 +69,11 @@ fn decrypt_mm2_asset(mut data: Vec<u8>) -> Result<Vec<u8>, AssetDecryptError> {
     Ok(data)
 }
 
-fn encrypt_mm2_asset(mut data: Vec<u8>) -> Result<Vec<u8>, AssetDecryptError> {
+fn encrypt_with_padding(mut data: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, AssetDecryptError> {
     {
         data.resize(data.len().next_multiple_of(4), 0);
         let data = bytemuck::try_cast_slice_mut(&mut data)?;
-        xxtea::encrypt(data, MM2_ASSET_KEY).unwrap();
+        xxtea::encrypt(data, key).unwrap();
     }
 
     Ok(data)
