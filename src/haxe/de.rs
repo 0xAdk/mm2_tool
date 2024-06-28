@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, convert::Infallible, fmt::Debug, sync::RwLock};
+use std::{collections::BTreeMap, fmt::Debug, sync::RwLock};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use winnow::{
@@ -46,7 +46,11 @@ pub enum Object {
     },
 
     Exception(Box<Object>),
-    Custom(Infallible),
+    Custom {
+        name: String,
+        fields: Vec<String>,
+        values: Vec<Object>,
+    },
 }
 
 impl Debug for Object {
@@ -56,11 +60,23 @@ impl Debug for Object {
             Object::Bool(value) => write!(f, "{value:?}"),
             Object::Int(value) => write!(f, "{value:?}"),
             Object::Float(value) => write!(f, "{value:?}"),
-            Object::String(value) => write!(f, "{value:?}"),
-            Object::Date(_) => todo!(),
+            Object::String(value) | Object::Date(value) => write!(f, "{value:?}"),
             Object::Bytes(_) => todo!(),
             Object::Array(value) | Object::List(value) => {
                 f.debug_list().entries(value.iter()).finish()
+            }
+            Object::Custom {
+                name,
+                fields,
+                values,
+            } => {
+                f.write_str("class ")?;
+                let mut f = f.debug_struct(name);
+                let entries = fields.iter().zip(values.iter());
+                for (field, value) in entries {
+                    f.field(field, value);
+                }
+                f.finish()
             }
             Object::StringMap(value) => f.debug_map().entries(value.iter()).finish(),
             Object::IntMap(value) => f.debug_map().entries(value.iter()).finish(),
@@ -93,7 +109,6 @@ impl Debug for Object {
                 f.finish()
             }
             Object::Exception(value) => write!(f, "{value:?}"),
-            Object::Custom(_) => todo!(),
         }
     }
 }
@@ -229,13 +244,23 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
     Ok(obj)
 }
 
-fn parse_date(_data: &mut Input) -> winnow::PResult<Object> {
-    todo!()
+fn parse_date(data: &mut Input) -> winnow::PResult<Object> {
+    'v'.parse_next(data)?;
 
-    // 'v'.parse_next(data)?;
-    // let date_str = take_while(|c: char| c.is_digit(10) || c == '-' || c == ' ' || c == ':')
-    //     .parse_next(data)?;
-    // Ok(Object::Date(date_str))
+    // let year = dec_uint.parse_next(data)?;
+    // '-'.parse_next(data)?;
+    // let month = dec_uint.parse_next(data)?;
+    // '-'.parse_next(data)?;
+    // let day = dec_uint.parse_next(data)?;
+    // ' '.parse_next(data)?;
+    // let hour = dec_uint.parse_next(data)?;
+    // ':'.parse_next(data)?;
+    // let minute = dec_uint.parse_next(data)?;
+    // ':'.parse_next(data)?;
+    // let second = dec_uint.parse_next(data)?;
+
+    let date_str = take(19_usize).parse_next(data)?;
+    Ok(Object::Date(date_str.to_string()))
 }
 
 fn parse_string_map(data: &mut Input) -> winnow::PResult<Object> {
@@ -370,18 +395,47 @@ fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Object> {
     Ok(object_cache.get(index).unwrap().clone())
 }
 
-fn parse_custom(_data: &mut Input) -> winnow::PResult<Object> {
-    todo!()
-    // 'C'.parse_next(data)?;
-    // let class_name = parse_string(data)?;
-    // let custom_data = take_while(|c: char| c.is_alphanumeric() || c == '_').parse_next(data)?;
-    // 'g'.parse_next(data)?;
-    // if let Object::String(class_name_str) = class_name {
-    //     Ok(Object::Custom(format!(
-    //         "{}:{}",
-    //         class_name_str, custom_data
-    //     )))
-    // } else {
-    //     Err(winnow::error::Error::new("Invalid custom class name"))
-    // }
+fn parse_custom(data: &mut Input) -> winnow::PResult<Object> {
+    'C'.parse_next(data)?;
+    let name = parse_string.parse_next(data)?;
+    // technically after the class there is arbitrary data, but from testing
+    // the data I care about custom sections just contains more serialized haxe
+    // data.
+    //
+    // That data is always two arrays one with strings that are field
+    // name, and another with the same number of elements of the last array
+    // with each fields value. If this ever caues a panic on deserialization
+    // I'll have to rethink this xd
+    let fields = {
+        let fields = parse_array.parse_next(data)?;
+        let Object::Array(fields) = fields else {
+            return Err(winnow::error::ErrMode::Cut(ContextError::new()));
+        };
+        fields
+            .into_iter()
+            .map(|obj| {
+                let Object::String(s) = obj else {
+                    return Err(winnow::error::ErrMode::Cut(ContextError::new()));
+                };
+
+                winnow::PResult::Ok(s)
+            })
+            .collect::<winnow::PResult<Vec<String>>>()?
+    };
+    let values = {
+        let values = parse_array.parse_next(data)?;
+        let Object::Array(values) = values else {
+            return Err(winnow::error::ErrMode::Cut(ContextError::new()));
+        };
+        values
+    };
+    'g'.parse_next(data)?;
+
+    let obj = Object::Custom {
+        name,
+        fields,
+        values,
+    };
+    data.state.write().unwrap().object_cache.push(obj.clone());
+    Ok(obj)
 }
