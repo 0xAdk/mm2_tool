@@ -8,7 +8,8 @@ pub struct Cli {
     pub command: Command,
 }
 
-const MM2_ASSET_KEY: &str = "aj3fk29dl309f845";
+pub const MM2_ASSET_KEY: &str = "aj3fk29dl309f845";
+pub const MM2_SAVE_KEY: &str = "HXl;kjsaf4982097";
 
 #[derive(Subcommand)]
 pub enum Command {
@@ -25,6 +26,12 @@ pub enum Command {
     Haxe {
         #[command(subcommand)]
         command: HaxeCommand,
+    },
+
+    /// Manege mm2 save games
+    Savetool {
+        #[command(subcommand)]
+        command: SaveToolCommand,
     },
 }
 
@@ -60,6 +67,22 @@ pub enum HaxeCommand {
         file: PathBuf,
     },
     Deserialize {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SaveToolCommand {
+    Save {
+        #[arg(short, long)]
+        output: PathBuf,
+
+        file: PathBuf,
+    },
+    Load {
         #[arg(short, long)]
         output: PathBuf,
 
