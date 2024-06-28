@@ -73,3 +73,59 @@ pub fn crypt(mode: TeaMode, data: &mut [u32], key: &[u8; 16]) -> Result<(), ()> 
 
     Ok(())
 }
+
+#[derive(thiserror::Error, Debug)]
+pub enum CryptPadError {
+    #[error(transparent)]
+    FailedCast(#[from] bytemuck::PodCastError),
+
+    #[error(transparent)]
+    InvalidUtf8Data(#[from] std::str::Utf8Error),
+}
+
+pub fn decrypt_with_padding(mut data: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, CryptPadError> {
+    {
+        let data = bytemuck::try_cast_slice_mut(&mut data)?;
+        decrypt(data, key).unwrap();
+    }
+
+    // pop at most 4 nul padding bytes from the end
+    for _ in 0..4 {
+        match data.last() {
+            Some(&0) => {
+                data.pop();
+            }
+            _ => break,
+        }
+    }
+
+    Ok(data)
+}
+
+pub fn encrypt_with_padding(mut data: Vec<u8>, key: &[u8; 16]) -> Result<Vec<u8>, CryptPadError> {
+    {
+        data.resize(data.len().next_multiple_of(4), 0);
+        let data = bytemuck::try_cast_slice_mut(&mut data)?;
+        encrypt(data, key).unwrap();
+    }
+
+    Ok(data)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn roundtrip() {
+        const KEY: &[u8; 16] = b"aj3fk29dl309f845";
+        let data = [0xdead, 0xbeef];
+
+        let mut same_data = data;
+        encrypt(&mut same_data, KEY).unwrap();
+        decrypt(&mut same_data, KEY).unwrap();
+
+        assert_eq!(data.len(), same_data.len());
+        assert_eq!(data, same_data.as_slice());
+    }
+}
