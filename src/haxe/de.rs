@@ -11,7 +11,7 @@ use winnow::{
 
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, PartialOrd)]
-pub enum Object {
+pub enum Value {
     Null,
 
     Bool(bool),
@@ -22,50 +22,50 @@ pub enum Object {
     Date(String),
     Bytes(Vec<u8>),
 
-    Array(Vec<Object>),
-    List(Vec<Object>),
+    Array(Vec<Value>),
+    List(Vec<Value>),
 
-    StringMap(BTreeMap<String, Object>),
-    IntMap(BTreeMap<i32, Object>),
+    StringMap(BTreeMap<String, Value>),
+    IntMap(BTreeMap<i32, Value>),
     #[allow(clippy::enum_variant_names)]
-    ObjectMap(BTreeMap<Object, Object>),
+    ObjectMap(BTreeMap<Value, Value>),
 
     Struct {
-        fields: BTreeMap<String, Object>,
+        fields: BTreeMap<String, Value>,
     },
 
     Class {
         name: String,
-        fields: BTreeMap<String, Object>,
+        fields: BTreeMap<String, Value>,
     },
 
     Enum {
         name: String,
         constructor: String,
-        fields: Vec<Object>,
+        fields: Vec<Value>,
     },
 
-    Exception(Box<Object>),
+    Exception(Box<Value>),
     Custom {
         name: String,
         fields: Vec<String>,
-        values: Vec<Object>,
+        values: Vec<Value>,
     },
 }
 
-impl Debug for Object {
+impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Object::Null => f.write_str("null"),
-            Object::Bool(value) => write!(f, "{value:?}"),
-            Object::Int(value) => write!(f, "{value:?}"),
-            Object::Float(value) => write!(f, "{value:?}"),
-            Object::String(value) | Object::Date(value) => write!(f, "{value:?}"),
-            Object::Bytes(_) => todo!(),
-            Object::Array(value) | Object::List(value) => {
+            Value::Null => f.write_str("null"),
+            Value::Bool(value) => write!(f, "{value:?}"),
+            Value::Int(value) => write!(f, "{value:?}"),
+            Value::Float(value) => write!(f, "{value:?}"),
+            Value::String(value) | Value::Date(value) => write!(f, "{value:?}"),
+            Value::Bytes(_) => todo!(),
+            Value::Array(value) | Value::List(value) => {
                 f.debug_list().entries(value.iter()).finish()
             }
-            Object::Custom {
+            Value::Custom {
                 name,
                 fields,
                 values,
@@ -78,10 +78,10 @@ impl Debug for Object {
                 }
                 f.finish()
             }
-            Object::StringMap(value) => f.debug_map().entries(value.iter()).finish(),
-            Object::IntMap(value) => f.debug_map().entries(value.iter()).finish(),
-            Object::ObjectMap(value) => f.debug_map().entries(value.iter()).finish(),
-            Object::Struct { fields } => {
+            Value::StringMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Value::IntMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Value::ObjectMap(value) => f.debug_map().entries(value.iter()).finish(),
+            Value::Struct { fields } => {
                 f.write_str("struct")?;
                 let mut f = f.debug_struct("");
                 for (field, value) in fields {
@@ -89,7 +89,7 @@ impl Debug for Object {
                 }
                 f.finish()
             }
-            Object::Class { name, fields } => {
+            Value::Class { name, fields } => {
                 f.write_str("class ")?;
                 let mut f = f.debug_struct(name);
                 for (field, value) in fields {
@@ -97,7 +97,7 @@ impl Debug for Object {
                 }
                 f.finish()
             }
-            Object::Enum {
+            Value::Enum {
                 name,
                 constructor,
                 fields,
@@ -108,7 +108,7 @@ impl Debug for Object {
                 }
                 f.finish()
             }
-            Object::Exception(value) => write!(f, "{value:?}"),
+            Value::Exception(value) => write!(f, "{value:?}"),
         }
     }
 }
@@ -116,12 +116,12 @@ impl Debug for Object {
 #[derive(Debug, Default)]
 struct ParserState {
     string_cache: Vec<String>,
-    object_cache: Vec<Object>,
+    object_cache: Vec<Value>,
 }
 
 type Input<'st> = Stateful<&'st str, &'st RwLock<ParserState>>;
 
-pub fn parse(input: &mut &str) -> Result<Object, ContextError> {
+pub fn parse(input: &mut &str) -> Result<Value, ContextError> {
     parse_object
         .parse(Input {
             input,
@@ -130,39 +130,39 @@ pub fn parse(input: &mut &str) -> Result<Object, ContextError> {
         .map_err(winnow::error::ParseError::into_inner)
 }
 
-fn parse_object(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_object(data: &mut Input) -> winnow::PResult<Value> {
     Ok(match data.bytes().next().unwrap() {
         b'n' => {
             data.input = &data[1..];
-            return Ok(Object::Null);
+            return Ok(Value::Null);
         }
         b'z' => {
             data.input = &data[1..];
-            Object::Int(0)
+            Value::Int(0)
         }
         b'i' => parse_int(data)?,
         b'd' => parse_float(data)?,
         b'k' => {
             data.input = &data[1..];
-            Object::Float(f64::NAN)
+            Value::Float(f64::NAN)
         }
         b'm' => {
             data.input = &data[1..];
-            Object::Float(f64::NEG_INFINITY)
+            Value::Float(f64::NEG_INFINITY)
         }
         b'p' => {
             data.input = &data[1..];
-            Object::Float(f64::INFINITY)
+            Value::Float(f64::INFINITY)
         }
         b't' => {
             data.input = &data[1..];
-            Object::Bool(true)
+            Value::Bool(true)
         }
         b'f' => {
             data.input = &data[1..];
-            Object::Bool(false)
+            Value::Bool(false)
         }
-        b'y' => Object::String(parse_string_literal(data)?),
+        b'y' => Value::String(parse_string_literal(data)?),
         b'l' => parse_list(data)?,
         b'a' => parse_array(data)?,
         b'v' => parse_date(data)?,
@@ -175,21 +175,21 @@ fn parse_object(data: &mut Input) -> winnow::PResult<Object> {
         b'c' => parse_class(data)?,
         b'w' => parse_enum(data)?,
         b'j' => todo!("https://github.com/HaxeFoundation/haxe/blob/dc1a43dc52f98b9c480f68264885c6155e570f3e/std/haxe/Unserializer.hx#L325"),
-        b'R' => Object::String(parse_string_cache_reference(data)?),
+        b'R' => Value::String(parse_string_cache_reference(data)?),
         b'r' => parse_int_cache_reference(data)?,
         b'C' => parse_custom(data)?,
         c => todo!("{}", c as char),
     })
 }
 
-fn parse_int(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_int(data: &mut Input) -> winnow::PResult<Value> {
     'i'.parse_next(data)?;
-    Ok(Object::Int(dec_int.parse_next(data)?))
+    Ok(Value::Int(dec_int.parse_next(data)?))
 }
 
-fn parse_float(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_float(data: &mut Input) -> winnow::PResult<Value> {
     'd'.parse_next(data)?;
-    Ok(Object::Float(float.parse_next(data)?))
+    Ok(Value::Float(float.parse_next(data)?))
 }
 
 fn parse_string(data: &mut Input) -> winnow::PResult<String> {
@@ -209,7 +209,7 @@ fn parse_string_literal(data: &mut Input) -> winnow::PResult<String> {
     Ok(s)
 }
 
-fn parse_list(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_list(data: &mut Input) -> winnow::PResult<Value> {
     'l'.parse_next(data)?;
     let mut items = Vec::new();
     while data.bytes().next() != Some(b'h') {
@@ -218,12 +218,12 @@ fn parse_list(data: &mut Input) -> winnow::PResult<Object> {
     }
     'h'.parse_next(data)?;
 
-    let obj = Object::List(items);
+    let obj = Value::List(items);
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_array(data: &mut Input) -> winnow::PResult<Value> {
     'a'.parse_next(data)?;
     let mut items = Vec::new();
     while data.bytes().next() != Some(b'h') {
@@ -231,7 +231,7 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
             'u'.parse_next(data)?;
             let count: usize = dec_uint.parse_next(data)?;
             for _ in 0..count {
-                items.push(Object::Null);
+                items.push(Value::Null);
             }
         } else {
             let item = parse_object(data)?;
@@ -239,12 +239,12 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Object> {
         }
     }
     'h'.parse_next(data)?;
-    let obj = Object::Array(items);
+    let obj = Value::Array(items);
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_date(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_date(data: &mut Input) -> winnow::PResult<Value> {
     'v'.parse_next(data)?;
 
     // let year = dec_uint.parse_next(data)?;
@@ -260,10 +260,10 @@ fn parse_date(data: &mut Input) -> winnow::PResult<Object> {
     // let second = dec_uint.parse_next(data)?;
 
     let date_str = take(19_usize).parse_next(data)?;
-    Ok(Object::Date(date_str.to_string()))
+    Ok(Value::Date(date_str.to_string()))
 }
 
-fn parse_string_map(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_string_map(data: &mut Input) -> winnow::PResult<Value> {
     'b'.parse_next(data)?;
     let mut map = BTreeMap::new();
     while data.bytes().next() != Some(b'h') {
@@ -272,12 +272,12 @@ fn parse_string_map(data: &mut Input) -> winnow::PResult<Object> {
         map.insert(key, value);
     }
     'h'.parse_next(data)?;
-    let obj = Object::StringMap(map);
+    let obj = Value::StringMap(map);
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_int_map(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_int_map(data: &mut Input) -> winnow::PResult<Value> {
     'q'.parse_next(data)?;
     let mut map = BTreeMap::new();
     while data.bytes().next() != Some(b'h') {
@@ -287,12 +287,12 @@ fn parse_int_map(data: &mut Input) -> winnow::PResult<Object> {
         map.insert(key, value);
     }
     'h'.parse_next(data)?;
-    let obj = Object::IntMap(map);
+    let obj = Value::IntMap(map);
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_object_map(_data: &mut Input) -> winnow::PResult<Object> {
+fn parse_object_map(_data: &mut Input) -> winnow::PResult<Value> {
     todo!()
     // 'M'.parse_next(data)?;
     // let mut map = BTreeMap::new();
@@ -307,25 +307,25 @@ fn parse_object_map(_data: &mut Input) -> winnow::PResult<Object> {
     // Ok(Object::ObjectMap(map))
 }
 
-fn parse_bytes(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_bytes(data: &mut Input) -> winnow::PResult<Value> {
     's'.parse_next(data)?;
     let len: usize = dec_uint.parse_next(data)?;
     ':'.parse_next(data)?;
     let bytes = take(len).parse_next(data)?;
     let bytes = STANDARD.decode(bytes).unwrap();
-    let obj = Object::Bytes(bytes);
+    let obj = Value::Bytes(bytes);
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_exception(_data: &mut Input) -> winnow::PResult<Object> {
+fn parse_exception(_data: &mut Input) -> winnow::PResult<Value> {
     todo!()
     // 'x'.parse_next(data)?;
     // let exception_str = take_while(|c: char| c.is_alphanumeric()).parse_next(data)?;
     // Ok(Object::Exception(exception_str))
 }
 
-fn parse_struct(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_struct(data: &mut Input) -> winnow::PResult<Value> {
     'o'.parse_next(data)?;
     let mut fields = BTreeMap::new();
     while data.bytes().next() != Some(b'g') {
@@ -335,12 +335,12 @@ fn parse_struct(data: &mut Input) -> winnow::PResult<Object> {
     }
     'g'.parse_next(data)?;
 
-    let obj = Object::Struct { fields };
+    let obj = Value::Struct { fields };
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_class(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_class(data: &mut Input) -> winnow::PResult<Value> {
     'c'.parse_next(data)?;
     let name = parse_string(data)?;
     let mut fields = BTreeMap::new();
@@ -351,12 +351,12 @@ fn parse_class(data: &mut Input) -> winnow::PResult<Object> {
     }
     'g'.parse_next(data)?;
 
-    let obj = Object::Class { name, fields };
+    let obj = Value::Class { name, fields };
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)
 }
 
-fn parse_enum(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_enum(data: &mut Input) -> winnow::PResult<Value> {
     'w'.parse_next(data)?;
     let name = parse_string(data)?;
     let constructor = parse_string(data)?;
@@ -368,7 +368,7 @@ fn parse_enum(data: &mut Input) -> winnow::PResult<Object> {
         fields.push(field);
     }
 
-    let obj = Object::Enum {
+    let obj = Value::Enum {
         name,
         constructor,
         fields,
@@ -387,7 +387,7 @@ fn parse_string_cache_reference(data: &mut Input) -> winnow::PResult<String> {
     Ok(string_cache.get(index).unwrap().clone())
 }
 
-fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Value> {
     'r'.parse_next(data)?;
     let index: usize = dec_uint.parse_next(data)?;
     let object_cache = &data.state.read().unwrap().object_cache;
@@ -395,7 +395,7 @@ fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Object> {
     Ok(object_cache.get(index).unwrap().clone())
 }
 
-fn parse_custom(data: &mut Input) -> winnow::PResult<Object> {
+fn parse_custom(data: &mut Input) -> winnow::PResult<Value> {
     'C'.parse_next(data)?;
     let name = parse_string.parse_next(data)?;
     // technically after the class there is arbitrary data, but from testing
@@ -408,13 +408,13 @@ fn parse_custom(data: &mut Input) -> winnow::PResult<Object> {
     // I'll have to rethink this xd
     let fields = {
         let fields = parse_array.parse_next(data)?;
-        let Object::Array(fields) = fields else {
+        let Value::Array(fields) = fields else {
             return Err(winnow::error::ErrMode::Cut(ContextError::new()));
         };
         fields
             .into_iter()
             .map(|obj| {
-                let Object::String(s) = obj else {
+                let Value::String(s) = obj else {
                     return Err(winnow::error::ErrMode::Cut(ContextError::new()));
                 };
 
@@ -424,14 +424,14 @@ fn parse_custom(data: &mut Input) -> winnow::PResult<Object> {
     };
     let values = {
         let values = parse_array.parse_next(data)?;
-        let Object::Array(values) = values else {
+        let Value::Array(values) = values else {
             return Err(winnow::error::ErrMode::Cut(ContextError::new()));
         };
         values
     };
     'g'.parse_next(data)?;
 
-    let obj = Object::Custom {
+    let obj = Value::Custom {
         name,
         fields,
         values,
