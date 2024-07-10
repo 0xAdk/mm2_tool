@@ -1,3 +1,4 @@
+use std::{borrow::Cow, rc::Rc};
 use std::{collections::BTreeMap, fmt::Debug, sync::RwLock};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -11,49 +12,49 @@ use winnow::{
 
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, PartialOrd)]
-pub enum Value {
+pub enum Value<'a> {
     Null,
 
     Bool(bool),
     Int(i32),
     Float(f64),
 
-    String(String),
-    Date(String),
+    String(Cow<'a, str>),
+    Date(Cow<'a, str>),
     Bytes(Vec<u8>),
 
-    Array(Vec<Value>),
-    List(Vec<Value>),
+    Array(Vec<Value<'a>>),
+    List(Vec<Value<'a>>),
 
-    StringMap(BTreeMap<String, Value>),
-    IntMap(BTreeMap<i32, Value>),
+    StringMap(BTreeMap<Cow<'a, str>, Value<'a>>),
+    IntMap(BTreeMap<i32, Value<'a>>),
     #[allow(clippy::enum_variant_names)]
-    ObjectMap(BTreeMap<Value, Value>),
+    ObjectMap(BTreeMap<Value<'a>, Value<'a>>),
 
     Struct {
-        fields: BTreeMap<String, Value>,
+        fields: BTreeMap<Cow<'a, str>, Value<'a>>,
     },
 
     Class {
-        name: String,
-        fields: BTreeMap<String, Value>,
+        name: Cow<'a, str>,
+        fields: BTreeMap<Cow<'a, str>, Value<'a>>,
     },
 
     Enum {
-        name: String,
-        constructor: String,
-        fields: Vec<Value>,
+        name: Cow<'a, str>,
+        constructor: Cow<'a, str>,
+        fields: Vec<Value<'a>>,
     },
 
-    Exception(Box<Value>),
+    Exception(Box<Value<'a>>),
     Custom {
-        name: String,
-        fields: Vec<String>,
-        values: Vec<Value>,
+        name: Cow<'a, str>,
+        fields: Vec<Cow<'a, str>>,
+        values: Vec<Value<'a>>,
     },
 }
 
-impl Debug for Value {
+impl Debug for Value<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Null => f.write_str("null"),
@@ -114,23 +115,23 @@ impl Debug for Value {
 }
 
 #[derive(Debug, Default)]
-struct ParserState {
-    string_cache: Vec<String>,
-    object_cache: Vec<Value>,
+struct ParserState<'a> {
+    string_cache: Vec<Cow<'a, str>>,
+    object_cache: Vec<Value<'a>>,
 }
 
-type Input<'st> = Stateful<&'st str, &'st RwLock<ParserState>>;
+type Input<'st> = Stateful<&'st str, Rc<RwLock<ParserState<'st>>>>;
 
-pub fn parse(input: &mut &str) -> Result<Value, ContextError> {
+pub fn parse<'a>(input: &mut &'a str) -> Result<Value<'a>, ContextError> {
     parse_object
         .parse(Input {
             input,
-            state: &RwLock::default(),
+            state: Rc::default(),
         })
         .map_err(winnow::error::ParseError::into_inner)
 }
 
-fn parse_object(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_object<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     Ok(match data.bytes().next().unwrap() {
         b'n' => {
             data.input = &data[1..];
@@ -182,34 +183,33 @@ fn parse_object(data: &mut Input) -> winnow::PResult<Value> {
     })
 }
 
-fn parse_int(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_int<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'i'.parse_next(data)?;
     Ok(Value::Int(dec_int.parse_next(data)?))
 }
 
-fn parse_float(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_float<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'd'.parse_next(data)?;
     Ok(Value::Float(float.parse_next(data)?))
 }
 
-fn parse_string(data: &mut Input) -> winnow::PResult<String> {
+fn parse_string<'a>(data: &mut Input<'a>) -> winnow::PResult<Cow<'a, str>> {
     alt((parse_string_literal, parse_string_cache_reference)).parse_next(data)
 }
 
-fn parse_string_literal(data: &mut Input) -> winnow::PResult<String> {
+fn parse_string_literal<'a>(data: &mut Input<'a>) -> winnow::PResult<Cow<'a, str>> {
     'y'.parse_next(data)?;
     let len: usize = dec_uint.parse_next(data)?;
     ':'.parse_next(data)?;
     let s = take(len).parse_next(data)?;
     let s = percent_encoding::percent_decode_str(s)
         .decode_utf8()
-        .unwrap()
-        .into_owned();
+        .unwrap();
     data.state.write().unwrap().string_cache.push(s.clone());
     Ok(s)
 }
 
-fn parse_list(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_list<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'l'.parse_next(data)?;
     let mut items = Vec::new();
     while data.bytes().next() != Some(b'h') {
@@ -223,7 +223,7 @@ fn parse_list(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_array(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_array<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'a'.parse_next(data)?;
     let mut items = Vec::new();
     while data.bytes().next() != Some(b'h') {
@@ -244,7 +244,7 @@ fn parse_array(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_date(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_date<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'v'.parse_next(data)?;
 
     // let year = dec_uint.parse_next(data)?;
@@ -260,10 +260,10 @@ fn parse_date(data: &mut Input) -> winnow::PResult<Value> {
     // let second = dec_uint.parse_next(data)?;
 
     let date_str = take(19_usize).parse_next(data)?;
-    Ok(Value::Date(date_str.to_string()))
+    Ok(Value::Date(date_str.into()))
 }
 
-fn parse_string_map(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_string_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'b'.parse_next(data)?;
     let mut map = BTreeMap::new();
     while data.bytes().next() != Some(b'h') {
@@ -277,7 +277,7 @@ fn parse_string_map(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_int_map(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_int_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'q'.parse_next(data)?;
     let mut map = BTreeMap::new();
     while data.bytes().next() != Some(b'h') {
@@ -292,7 +292,7 @@ fn parse_int_map(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_object_map(_data: &mut Input) -> winnow::PResult<Value> {
+fn parse_object_map<'a>(_data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     todo!()
     // 'M'.parse_next(data)?;
     // let mut map = BTreeMap::new();
@@ -307,7 +307,7 @@ fn parse_object_map(_data: &mut Input) -> winnow::PResult<Value> {
     // Ok(Object::ObjectMap(map))
 }
 
-fn parse_bytes(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_bytes<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     's'.parse_next(data)?;
     let len: usize = dec_uint.parse_next(data)?;
     ':'.parse_next(data)?;
@@ -318,14 +318,14 @@ fn parse_bytes(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_exception(_data: &mut Input) -> winnow::PResult<Value> {
+fn parse_exception<'a>(_data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     todo!()
     // 'x'.parse_next(data)?;
     // let exception_str = take_while(|c: char| c.is_alphanumeric()).parse_next(data)?;
     // Ok(Object::Exception(exception_str))
 }
 
-fn parse_struct(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_struct<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'o'.parse_next(data)?;
     let mut fields = BTreeMap::new();
     while data.bytes().next() != Some(b'g') {
@@ -340,7 +340,7 @@ fn parse_struct(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_class(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_class<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'c'.parse_next(data)?;
     let name = parse_string(data)?;
     let mut fields = BTreeMap::new();
@@ -356,7 +356,7 @@ fn parse_class(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_enum(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_enum<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'w'.parse_next(data)?;
     let name = parse_string(data)?;
     let constructor = parse_string(data)?;
@@ -378,7 +378,7 @@ fn parse_enum(data: &mut Input) -> winnow::PResult<Value> {
     Ok(obj)
 }
 
-fn parse_string_cache_reference(data: &mut Input) -> winnow::PResult<String> {
+fn parse_string_cache_reference<'a>(data: &mut Input<'a>) -> winnow::PResult<Cow<'a, str>> {
     'R'.parse_next(data)?;
     let index: usize = dec_uint.parse_next(data)?;
     let string_cache = &data.state.read().unwrap().string_cache;
@@ -387,7 +387,7 @@ fn parse_string_cache_reference(data: &mut Input) -> winnow::PResult<String> {
     Ok(string_cache.get(index).unwrap().clone())
 }
 
-fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_int_cache_reference<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'r'.parse_next(data)?;
     let index: usize = dec_uint.parse_next(data)?;
     let object_cache = &data.state.read().unwrap().object_cache;
@@ -395,7 +395,7 @@ fn parse_int_cache_reference(data: &mut Input) -> winnow::PResult<Value> {
     Ok(object_cache.get(index).unwrap().clone())
 }
 
-fn parse_custom(data: &mut Input) -> winnow::PResult<Value> {
+fn parse_custom<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'C'.parse_next(data)?;
     let name = parse_string.parse_next(data)?;
     // technically after the class there is arbitrary data, but from testing
@@ -420,7 +420,7 @@ fn parse_custom(data: &mut Input) -> winnow::PResult<Value> {
 
                 winnow::PResult::Ok(s)
             })
-            .collect::<winnow::PResult<Vec<String>>>()?
+            .collect::<winnow::PResult<Vec<_>>>()?
     };
     let values = {
         let values = parse_array.parse_next(data)?;
