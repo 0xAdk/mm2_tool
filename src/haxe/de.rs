@@ -2,6 +2,8 @@ use std::{borrow::Cow, rc::Rc};
 use std::{collections::BTreeMap, fmt::Debug, sync::RwLock};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
+use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 use winnow::{
     ascii::{dec_int, dec_uint, float},
     combinator::{alt, peek, repeat},
@@ -11,13 +13,13 @@ use winnow::{
 };
 
 #[allow(dead_code)]
-#[derive(Clone, PartialEq, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Value<'a> {
     Null,
 
     Bool(bool),
     Int(i32),
-    Float(f64),
+    Float(OrderedFloat<f64>),
 
     String(Cow<'a, str>),
     Date(Cow<'a, str>),
@@ -145,15 +147,15 @@ fn parse_object<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
         'd' => parse_float(data)?,
         'k' => {
             data.input = &data[1..];
-            Value::Float(f64::NAN)
+            Value::Float(OrderedFloat(f64::NAN))
         }
         'm' => {
             data.input = &data[1..];
-            Value::Float(f64::NEG_INFINITY)
+            Value::Float(OrderedFloat(f64::NEG_INFINITY))
         }
         'p' => {
             data.input = &data[1..];
-            Value::Float(f64::INFINITY)
+            Value::Float(OrderedFloat(f64::INFINITY))
         }
         't' => {
             data.input = &data[1..];

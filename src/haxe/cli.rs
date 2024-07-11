@@ -1,4 +1,4 @@
-use clap::Subcommand;
+use clap::{Subcommand, ValueEnum};
 
 use std::path::PathBuf;
 
@@ -24,6 +24,19 @@ pub enum Command {
         #[arg(short, long)]
         output: PathBuf,
 
+        #[arg(short, long, value_enum, default_value_t = FileFormat::Auto)]
+        format: FileFormat,
+
         file: PathBuf,
     },
+}
+
+#[derive(Debug, Clone, Default, ValueEnum)]
+pub enum FileFormat {
+    #[default]
+    Auto,
+
+    None,
+    #[cfg(feature = "export-json")]
+    Json,
 }
