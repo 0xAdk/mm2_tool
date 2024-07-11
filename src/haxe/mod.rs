@@ -1,5 +1,6 @@
 pub mod cli;
 mod de;
+mod value;
 
 pub use de::parse as from_str;
 
