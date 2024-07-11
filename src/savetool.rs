@@ -29,6 +29,9 @@ pub enum Command {
         #[arg(short, long)]
         output: PathBuf,
 
+        #[arg(short, long, value_enum, default_value_t = haxe::cli::FileFormat::Auto)]
+        format: haxe::cli::FileFormat,
+
         file: PathBuf,
     },
 }
@@ -41,21 +44,42 @@ pub fn run(Cli::Savetool { command }: Cli) {
             todo!("save tool save isn't implemented yet")
         }
 
-        Command::Load { file, output, .. } => {
+        Command::Load {
+            file,
+            output,
+            format,
+        } => {
             let data = std::fs::read(file).unwrap();
 
             let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
-            let data =
+            let mut data =
                 xxtea::decrypt_with_padding(data, key).unwrap_or_else(|err| panic!("{err:?}"));
-            let data = data
-                .into_iter()
-                .map(|c| c as char)
-                .skip_while(|c| *c != ']')
-                .skip(1)
-                .collect::<String>();
 
-            let obj = haxe::from_str(&mut data.as_str()).unwrap();
-            std::fs::write(output, std::format!("{obj:#?}")).unwrap();
+            let version_tag_end = data.iter().position(|c| *c == b']').unwrap();
+            let _ = data.drain(..=version_tag_end);
+
+            let mut data = std::str::from_utf8(&data).unwrap();
+
+            let obj = haxe::from_str(&mut data).unwrap();
+
+            #[allow(unused_variables)]
+            let byte_vec_spot: Vec<u8>;
+            let string_spot: String;
+
+            let bytes = match haxe::FileFormat::guess(&output, format) {
+                haxe::FileFormat::None => {
+                    string_spot = format!("{obj:#?}");
+                    string_spot.as_bytes()
+                }
+
+                #[cfg(feature = "export-json")]
+                haxe::FileFormat::Json => {
+                    byte_vec_spot = serde_json::to_vec_pretty(&obj).unwrap();
+                    byte_vec_spot.as_slice()
+                }
+            };
+
+            std::fs::write(output, bytes).unwrap();
         }
     }
 }
