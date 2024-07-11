@@ -62,7 +62,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
 
             let obj = haxe::from_str(&mut data).unwrap();
 
-            #[allow(unused_variables)]
+            #[cfg_attr(not(feature = "export-json"), allow(unused_variables))]
             let byte_vec_spot: Vec<u8>;
             let string_spot: String;
 

@@ -1,16 +1,39 @@
 pub mod cli;
 mod de;
+mod ser;
 mod value;
 
 pub use de::parse as from_str;
+pub use ser::to_string;
 
 pub use cli::{Cli, Command};
 pub fn run(Cli::Haxe { command }: Cli) {
     match command {
+        #[cfg_attr(
+            not(feature = "export-json"),
+            allow(irrefutable_let_patterns, unreachable_code, unused_variables)
+        )]
         Command::Serialize {
-            file: _, output: _, ..
+            file,
+            output,
+            format,
         } => {
-            todo!("serializing files isn't implemented yet")
+            let format = FileFormat::guess(&output, format);
+            if let FileFormat::None = format {
+                eprintln!("Error: a format is required when serializing");
+                return;
+            }
+
+            let data = std::fs::read(file).unwrap();
+
+            let value: Vec<value::Value> = match format {
+                FileFormat::None => unreachable!(),
+
+                #[cfg(feature = "export-json")]
+                FileFormat::Json => serde_json::from_slice(&data).unwrap(),
+            };
+
+            std::fs::write(output, to_string(&value)).unwrap();
         }
 
         Command::Deserialize {
@@ -23,10 +46,9 @@ pub fn run(Cli::Haxe { command }: Cli) {
 
             let obj = from_str(&mut data).unwrap();
 
-
-            let string_spot: String;
-            #[allow(unused_variables)]
+            #[cfg_attr(not(feature = "export-json"), allow(unused_variables))]
             let byte_vec_spot: Vec<u8>;
+            let string_spot: String;
 
             let bytes = match FileFormat::guess(&output, format) {
                 FileFormat::None => {

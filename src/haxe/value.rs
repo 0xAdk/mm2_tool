@@ -3,7 +3,6 @@ use std::{borrow::Cow, collections::BTreeMap, fmt::Debug};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[allow(dead_code)]
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Value<'a> {
     Null,
@@ -21,7 +20,6 @@ pub enum Value<'a> {
 
     StringMap(BTreeMap<Cow<'a, str>, Value<'a>>),
     IntMap(BTreeMap<i32, Value<'a>>),
-    #[allow(clippy::enum_variant_names)]
     ObjectMap(BTreeMap<Value<'a>, Value<'a>>),
 
     Struct {
