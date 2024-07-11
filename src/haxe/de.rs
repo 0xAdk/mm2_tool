@@ -4,9 +4,9 @@ use std::{collections::BTreeMap, fmt::Debug, sync::RwLock};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use winnow::{
     ascii::{dec_int, dec_uint, float},
-    combinator::alt,
+    combinator::{alt, peek, repeat},
     error::ContextError,
-    token::take,
+    token::{any, take},
     Parser, Stateful,
 };
 
@@ -122,8 +122,8 @@ struct ParserState<'a> {
 
 type Input<'st> = Stateful<&'st str, Rc<RwLock<ParserState<'st>>>>;
 
-pub fn parse<'a>(input: &mut &'a str) -> Result<Value<'a>, ContextError> {
-    parse_object
+pub fn parse<'a>(input: &mut &'a str) -> Result<Vec<Value<'a>>, ContextError> {
+    repeat(0.., parse_object)
         .parse(Input {
             input,
             state: Rc::default(),
@@ -132,54 +132,54 @@ pub fn parse<'a>(input: &mut &'a str) -> Result<Value<'a>, ContextError> {
 }
 
 fn parse_object<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
-    Ok(match data.bytes().next().unwrap() {
-        b'n' => {
+    Ok(match peek(any).parse_next(data)? {
+        'n' => {
             data.input = &data[1..];
             return Ok(Value::Null);
         }
-        b'z' => {
+        'z' => {
             data.input = &data[1..];
             Value::Int(0)
         }
-        b'i' => parse_int(data)?,
-        b'd' => parse_float(data)?,
-        b'k' => {
+        'i' => parse_int(data)?,
+        'd' => parse_float(data)?,
+        'k' => {
             data.input = &data[1..];
             Value::Float(f64::NAN)
         }
-        b'm' => {
+        'm' => {
             data.input = &data[1..];
             Value::Float(f64::NEG_INFINITY)
         }
-        b'p' => {
+        'p' => {
             data.input = &data[1..];
             Value::Float(f64::INFINITY)
         }
-        b't' => {
+        't' => {
             data.input = &data[1..];
             Value::Bool(true)
         }
-        b'f' => {
+        'f' => {
             data.input = &data[1..];
             Value::Bool(false)
         }
-        b'y' => Value::String(parse_string_literal(data)?),
-        b'l' => parse_list(data)?,
-        b'a' => parse_array(data)?,
-        b'v' => parse_date(data)?,
-        b'b' => parse_string_map(data)?,
-        b'q' => parse_int_map(data)?,
-        b'M' => parse_object_map(data)?,
-        b's' => parse_bytes(data)?,
-        b'x' => parse_exception(data)?,
-        b'o' => parse_struct(data)?,
-        b'c' => parse_class(data)?,
-        b'w' => parse_enum(data)?,
-        b'j' => todo!("https://github.com/HaxeFoundation/haxe/blob/dc1a43dc52f98b9c480f68264885c6155e570f3e/std/haxe/Unserializer.hx#L325"),
-        b'R' => Value::String(parse_string_cache_reference(data)?),
-        b'r' => parse_int_cache_reference(data)?,
-        b'C' => parse_custom(data)?,
-        c => todo!("{}", c as char),
+        'y' => Value::String(parse_string_literal(data)?),
+        'l' => parse_list(data)?,
+        'a' => parse_array(data)?,
+        'v' => parse_date(data)?,
+        'b' => parse_string_map(data)?,
+        'q' => parse_int_map(data)?,
+        'M' => parse_object_map(data)?,
+        's' => parse_bytes(data)?,
+        'x' => parse_exception(data)?,
+        'o' => parse_struct(data)?,
+        'c' => parse_class(data)?,
+        'w' => parse_enum(data)?,
+        'j' => todo!("https://github.com/HaxeFoundation/haxe/blob/dc1a43dc52f98b9c480f68264885c6155e570f3e/std/haxe/Unserializer.hx#L325"),
+        'R' => Value::String(parse_string_cache_reference(data)?),
+        'r' => parse_int_cache_reference(data)?,
+        'C' => parse_custom(data)?,
+        c => todo!("{c:?}"),
     })
 }
 
