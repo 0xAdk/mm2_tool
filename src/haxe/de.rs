@@ -191,19 +191,16 @@ fn parse_int_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     Ok(obj)
 }
 
-fn parse_object_map<'a>(_data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
-    todo!()
-    // 'M'.parse_next(data)?;
-    // let mut map = BTreeMap::new();
-    // while data.bytes().next() != Some(b'h') {
-    //     let key = parse_object(data)?;
-    //     let value = parse_object(data)?;
-    //     if let Some(key) = key {
-    //         map.insert(key, Some(value));
-    //     }
-    // }
-    // 'h'.parse_next(data)?;
-    // Ok(Object::ObjectMap(map))
+fn parse_object_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
+    'M'.parse_next(data)?;
+    let mut map = BTreeMap::new();
+    while data.bytes().next() != Some(b'h') {
+        let key = parse_object(data)?;
+        let value = parse_object(data)?;
+        map.insert(key, value);
+    }
+    'h'.parse_next(data)?;
+    Ok(Value::ObjectMap(map))
 }
 
 fn parse_bytes<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
