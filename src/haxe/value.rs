@@ -53,7 +53,7 @@ impl Debug for Value<'_> {
             Value::Int(value) => write!(f, "{value:?}"),
             Value::Float(value) => write!(f, "{value:?}"),
             Value::String(value) | Value::Date(value) => write!(f, "{value:?}"),
-            Value::Bytes(_) => todo!(),
+            Value::Bytes(bytes) => write!(f, "{bytes:?}"),
             Value::Array(value) | Value::List(value) => {
                 f.debug_list().entries(value.iter()).finish()
             }

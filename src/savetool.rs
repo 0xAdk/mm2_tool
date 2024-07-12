@@ -22,6 +22,9 @@ pub enum Command {
         #[arg(short, long)]
         output: PathBuf,
 
+        #[arg(short, long, value_enum, default_value_t = haxe::cli::FileFormat::Auto)]
+        format: haxe::cli::FileFormat,
+
         file: PathBuf,
     },
 
@@ -38,10 +41,41 @@ pub enum Command {
 
 pub fn run(Cli::Savetool { command }: Cli) {
     match command {
+        #[cfg_attr(
+            not(feature = "export-json"),
+            allow(irrefutable_let_patterns, unreachable_code, unused_variables)
+        )]
         Command::Save {
-            file: _, output: _, ..
+            file,
+            output,
+            format,
         } => {
-            todo!("save tool save isn't implemented yet")
+            let format = haxe::FileFormat::guess(&file, format);
+            if let haxe::FileFormat::None = format {
+                eprintln!("Error: a format is required when serializing");
+                return;
+            }
+
+            let data = std::fs::read(file).unwrap();
+
+            let value: Vec<haxe::Value> = match format {
+                haxe::FileFormat::None => unreachable!(),
+
+                #[cfg(feature = "export-json")]
+                haxe::FileFormat::Json => serde_json::from_slice(&data).unwrap(),
+            };
+
+            let data = haxe::to_string(&value);
+
+            // TODO: we should save this tag on load instead of just hardcoding it here
+            let tag = "[4.0.104]";
+            let data = format!("{tag}{data}").into_bytes();
+
+            let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
+            let data =
+                xxtea::encrypt_with_padding(data, key).unwrap_or_else(|err| panic!("{err:?}"));
+
+            std::fs::write(output, data).unwrap();
         }
 
         Command::Load {

@@ -5,6 +5,7 @@ mod value;
 
 pub use de::parse as from_str;
 pub use ser::to_string;
+pub use value::Value;
 
 pub use cli::{Cli, Command};
 pub fn run(Cli::Haxe { command }: Cli) {
@@ -18,7 +19,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             output,
             format,
         } => {
-            let format = FileFormat::guess(&output, format);
+            let format = FileFormat::guess(&file, format);
             if let FileFormat::None = format {
                 eprintln!("Error: a format is required when serializing");
                 return;
@@ -26,7 +27,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
 
             let data = std::fs::read(file).unwrap();
 
-            let value: Vec<value::Value> = match format {
+            let value: Vec<Value> = match format {
                 FileFormat::None => unreachable!(),
 
                 #[cfg(feature = "export-json")]
