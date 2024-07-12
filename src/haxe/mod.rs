@@ -3,7 +3,7 @@ mod de;
 mod ser;
 mod value;
 
-pub use de::parse as from_str;
+pub use de::from_str;
 pub use ser::to_string;
 pub use value::Value;
 
