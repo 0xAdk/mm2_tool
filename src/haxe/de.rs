@@ -21,7 +21,7 @@ struct ParserState<'a> {
 
 type Input<'st> = Stateful<&'st str, Rc<RwLock<ParserState<'st>>>>;
 
-pub fn from_str<'a>(input: &mut &'a str) -> Result<Vec<Value<'a>>, ContextError> {
+pub fn from_str(input: &str) -> Result<Vec<Value>, ContextError> {
     repeat(0.., parse_object)
         .parse(Input {
             input,

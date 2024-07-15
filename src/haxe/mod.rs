@@ -3,6 +3,9 @@ mod de;
 mod ser;
 mod value;
 
+#[cfg(test)]
+mod tests;
+
 pub use de::from_str;
 pub use ser::to_string;
 pub use value::Value;
