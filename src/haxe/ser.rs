@@ -195,8 +195,23 @@ fn serialize_list(state: &mut State, values: &[Value]) -> fmt::Result {
 
 fn serialize_array(state: &mut State, values: &[Value]) -> fmt::Result {
     state.output.write_char('a')?;
-    for value in values {
-        serialize_value(state, value)?;
+    let mut values = values.iter();
+    loop {
+        let mut value = values.next();
+
+        if value == Some(&Value::Null) {
+            let mut null_count = 0;
+            while value == Some(&Value::Null) {
+                null_count += 1;
+                value = values.next();
+            }
+            state.output.write_fmt(format_args!("u{null_count}"))?;
+        }
+
+        match value {
+            Some(value) => serialize_value(state, value)?,
+            None => break,
+        };
     }
     state.output.write_char('h')?;
 
