@@ -78,7 +78,7 @@ fn parse_object<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
         'R' => Value::String(parse_string_cache_reference(data)?),
         'r' => parse_int_cache_reference(data)?,
         'C' => parse_custom(data)?,
-        c => todo!("{c:?}"),
+        unknown => todo!("{unknown:?}"),
     })
 }
 

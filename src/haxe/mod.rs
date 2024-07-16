@@ -46,9 +46,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             format,
         } => {
             let data = std::fs::read_to_string(file).unwrap();
-            let mut data = data.as_str();
-
-            let obj = from_str(&mut data).unwrap();
+            let obj = from_str(&data).unwrap();
 
             #[cfg_attr(not(feature = "export-json"), allow(unused_variables))]
             let byte_vec_spot: Vec<u8>;

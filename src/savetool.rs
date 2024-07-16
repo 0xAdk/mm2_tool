@@ -92,9 +92,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let version_tag_end = data.iter().position(|c| *c == b']').unwrap();
             let _ = data.drain(..=version_tag_end);
 
-            let mut data = std::str::from_utf8(&data).unwrap();
-
-            let obj = haxe::from_str(&mut data).unwrap();
+            let obj = haxe::from_str(std::str::from_utf8(&data).unwrap()).unwrap();
 
             #[cfg_attr(not(feature = "export-json"), allow(unused_variables))]
             let byte_vec_spot: Vec<u8>;

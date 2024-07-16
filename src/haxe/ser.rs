@@ -91,9 +91,7 @@ fn serialize_enum(
     serialize_string(state, name)?;
     serialize_string(state, constructor)?;
     state.output.write_char(':')?;
-    state
-        .output
-        .write_fmt(format_args!("{len}", len = fields.len()))?;
+    state.output.write_fmt(format_args!("{}", fields.len()))?;
     for field in fields {
         serialize_value(state, field)?;
     }
