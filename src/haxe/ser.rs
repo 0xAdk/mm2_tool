@@ -114,24 +114,42 @@ fn serialize_class(
 }
 
 fn serialize_struct(
-    _state: &mut State,
-    _fields: &std::collections::BTreeMap<Cow<'_, str>, Value<'_>>,
+    state: &mut State,
+    fields: &std::collections::BTreeMap<Cow<'_, str>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
-    todo!()
+    state.output.write_char('o')?;
+    for (key, value) in fields {
+        serialize_string(state, key)?;
+        serialize_value(state, value)?;
+    }
+    state.output.write_char('g')?;
+    Ok(())
 }
 
 fn serialize_object_map(
-    _state: &mut State,
-    _map: &std::collections::BTreeMap<Value<'_>, Value<'_>>,
+    state: &mut State,
+    map: &std::collections::BTreeMap<Value<'_>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
-    todo!()
+    state.output.write_char('M')?;
+    for (key, value) in map {
+        serialize_value(state, key)?;
+        serialize_value(state, value)?;
+    }
+    state.output.write_char('h')?;
+    Ok(())
 }
 
 fn serialize_int_map(
-    _state: &mut State,
-    _map: &std::collections::BTreeMap<i32, Value<'_>>,
+    state: &mut State,
+    map: &std::collections::BTreeMap<i32, Value<'_>>,
 ) -> Result<(), fmt::Error> {
-    todo!()
+    state.output.write_char('q')?;
+    for (key, value) in map {
+        state.output.write_fmt(format_args!(":{key}"))?;
+        serialize_value(state, value)?;
+    }
+    state.output.write_char('h')?;
+    Ok(())
 }
 
 fn serialize_string_map(
