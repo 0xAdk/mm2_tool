@@ -156,6 +156,17 @@ fn serialize_bytes(state: &mut State, bytes: &[u8]) -> Result<(), fmt::Error> {
 }
 
 fn serialize_string<'a>(state: &mut State, value: &'a str) -> fmt::Result {
+    use percent_encoding::{percent_encode, AsciiSet, CONTROLS};
+
+    #[rustfmt::skip]
+    const PERCENT_ENCODED_CHARACTERS: &AsciiSet = &CONTROLS
+        .add(b'\'') // TBD if this is actually percent encoded
+        .add(b'*') // TBD if this is actually percent encoded
+        .add(b' ').add(b'!').add(b'"').add(b'#').add(b'$').add(b'%').add(b'&')
+        .add(b'(').add(b')').add(b'+').add(b',').add(b'/').add(b':').add(b';')
+        .add(b'<').add(b'=').add(b'>').add(b'?').add(b'@').add(b'[').add(b'\\')
+        .add(b']').add(b'^').add(b'`').add(b'{').add(b'|').add(b'}').add(b'~');
+
     let output = &mut state.output;
 
     let mut hasher = DefaultHasher::new();
@@ -168,8 +179,7 @@ fn serialize_string<'a>(state: &mut State, value: &'a str) -> fmt::Result {
     } else {
         state.string_cache.push(s_hash);
         let encoded: Cow<'a, str> =
-            percent_encoding::percent_encode(value.as_bytes(), percent_encoding::NON_ALPHANUMERIC)
-                .into();
+            percent_encode(value.as_bytes(), PERCENT_ENCODED_CHARACTERS).into();
 
         output.write_fmt(format_args!("y{len}:{encoded}", len = encoded.len()))
     }
