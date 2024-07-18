@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    collections::BTreeMap,
     fmt::{self, Write},
     hash::{DefaultHasher, Hash, Hasher},
 };
@@ -101,7 +102,7 @@ fn serialize_enum(
 fn serialize_class(
     state: &mut State,
     name: &str,
-    fields: &std::collections::BTreeMap<Cow<'_, str>, Value<'_>>,
+    fields: &BTreeMap<Cow<'_, str>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
     state.output.write_char('c')?;
     serialize_string(state, name)?;
@@ -115,7 +116,7 @@ fn serialize_class(
 
 fn serialize_struct(
     state: &mut State,
-    fields: &std::collections::BTreeMap<Cow<'_, str>, Value<'_>>,
+    fields: &BTreeMap<Cow<'_, str>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
     state.output.write_char('o')?;
     for (key, value) in fields {
@@ -128,7 +129,7 @@ fn serialize_struct(
 
 fn serialize_object_map(
     state: &mut State,
-    map: &std::collections::BTreeMap<Value<'_>, Value<'_>>,
+    map: &BTreeMap<Value<'_>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
     state.output.write_char('M')?;
     for (key, value) in map {
@@ -139,10 +140,7 @@ fn serialize_object_map(
     Ok(())
 }
 
-fn serialize_int_map(
-    state: &mut State,
-    map: &std::collections::BTreeMap<i32, Value<'_>>,
-) -> Result<(), fmt::Error> {
+fn serialize_int_map(state: &mut State, map: &BTreeMap<i32, Value<'_>>) -> Result<(), fmt::Error> {
     state.output.write_char('q')?;
     for (key, value) in map {
         state.output.write_fmt(format_args!(":{key}"))?;
@@ -154,7 +152,7 @@ fn serialize_int_map(
 
 fn serialize_string_map(
     state: &mut State,
-    map: &std::collections::BTreeMap<Cow<'_, str>, Value<'_>>,
+    map: &BTreeMap<Cow<'_, str>, Value<'_>>,
 ) -> Result<(), fmt::Error> {
     state.output.write_char('b')?;
     for (key, value) in map {
