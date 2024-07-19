@@ -1,9 +1,8 @@
 use std::{borrow::Cow, fmt::Debug};
 
-use vecmap::VecMap as BTreeMap;
-
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
+use vecmap::VecMap as Map;
 
 #[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Value<'a> {
@@ -20,17 +19,17 @@ pub enum Value<'a> {
     Array(Vec<Value<'a>>),
     List(Vec<Value<'a>>),
 
-    StringMap(BTreeMap<Cow<'a, str>, Value<'a>>),
-    IntMap(BTreeMap<i32, Value<'a>>),
-    ObjectMap(BTreeMap<Value<'a>, Value<'a>>),
+    StringMap(Map<Cow<'a, str>, Value<'a>>),
+    IntMap(Map<i32, Value<'a>>),
+    ObjectMap(Map<Value<'a>, Value<'a>>),
 
     Struct {
-        fields: BTreeMap<Cow<'a, str>, Value<'a>>,
+        fields: Map<Cow<'a, str>, Value<'a>>,
     },
 
     Class {
         name: Cow<'a, str>,
-        fields: BTreeMap<Cow<'a, str>, Value<'a>>,
+        fields: Map<Cow<'a, str>, Value<'a>>,
     },
 
     Enum {

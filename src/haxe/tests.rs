@@ -1,6 +1,5 @@
-use vecmap::VecMap as BTreeMap;
-
 use ordered_float::OrderedFloat;
+use vecmap::VecMap as Map;
 
 use super::*;
 
@@ -168,12 +167,12 @@ mod roundtrip {
 
     #[test]
     fn string_map() {
-        roundtrip_helper("bh", &vec![Value::StringMap(BTreeMap::new())]);
+        roundtrip_helper("bh", &vec![Value::StringMap(Map::new())]);
 
         roundtrip_helper(
             "by1:ai12y1:bd2.71y1:cfh",
             &vec![Value::StringMap({
-                let mut map = BTreeMap::new();
+                let mut map = Map::new();
                 map.insert("a".into(), Value::Int(12));
                 map.insert("b".into(), Value::Float(OrderedFloat(2.71)));
                 map.insert("c".into(), Value::Bool(false));
@@ -184,12 +183,12 @@ mod roundtrip {
 
     #[test]
     fn int_map() {
-        roundtrip_helper("qh", &vec![Value::IntMap(BTreeMap::new())]);
+        roundtrip_helper("qh", &vec![Value::IntMap(Map::new())]);
 
         roundtrip_helper(
             "q:1i12:2d2.71:3fh",
             &vec![Value::IntMap({
-                let mut map = BTreeMap::new();
+                let mut map = Map::new();
                 map.insert(1_i32, Value::Int(12));
                 map.insert(2_i32, Value::Float(OrderedFloat(2.71)));
                 map.insert(3_i32, Value::Bool(false));
@@ -200,14 +199,14 @@ mod roundtrip {
 
     #[test]
     fn object_map() {
-        roundtrip_helper("Mh", &vec![Value::ObjectMap(BTreeMap::new())]);
+        roundtrip_helper("Mh", &vec![Value::ObjectMap(Map::new())]);
 
         roundtrip_helper(
             "Moy4:namey1:agi12oR0y1:bgd2.71oR0y1:cgfh",
             &vec![Value::ObjectMap({
                 fn make_struct_key(name: &str) -> Value {
                     let fields = {
-                        let mut map = BTreeMap::new();
+                        let mut map = Map::new();
                         map.insert("name".into(), Value::String(name.into()));
                         map
                     };
@@ -215,7 +214,7 @@ mod roundtrip {
                     Value::Struct { fields }
                 }
 
-                let mut map = BTreeMap::new();
+                let mut map = Map::new();
                 map.insert(make_struct_key("a"), Value::Int(12));
                 map.insert(make_struct_key("b"), Value::Float(OrderedFloat(2.71)));
                 map.insert(make_struct_key("c"), Value::Bool(false));

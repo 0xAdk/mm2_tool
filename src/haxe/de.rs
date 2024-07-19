@@ -1,10 +1,9 @@
 use std::sync::RwLock;
 use std::{borrow::Cow, rc::Rc};
 
-use vecmap::VecMap as BTreeMap;
-
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use ordered_float::OrderedFloat;
+use vecmap::VecMap as Map;
 use winnow::{
     ascii::{dec_int, dec_uint, float},
     combinator::{alt, peek, repeat},
@@ -166,7 +165,7 @@ fn parse_date<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 
 fn parse_string_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'b'.parse_next(data)?;
-    let mut map = BTreeMap::new();
+    let mut map = Map::new();
     while data.bytes().next() != Some(b'h') {
         let key = parse_string(data)?;
         let value = parse_object(data)?;
@@ -180,7 +179,7 @@ fn parse_string_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 
 fn parse_int_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'q'.parse_next(data)?;
-    let mut map = BTreeMap::new();
+    let mut map = Map::new();
     while data.bytes().next() != Some(b'h') {
         ':'.parse_next(data)?;
         let key = dec_int.parse_next(data)?;
@@ -195,7 +194,7 @@ fn parse_int_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 
 fn parse_object_map<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'M'.parse_next(data)?;
-    let mut map = BTreeMap::new();
+    let mut map = Map::new();
     while data.bytes().next() != Some(b'h') {
         let key = parse_object(data)?;
         let value = parse_object(data)?;
@@ -225,7 +224,7 @@ fn parse_exception<'a>(_data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 
 fn parse_struct<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'o'.parse_next(data)?;
-    let mut fields = BTreeMap::new();
+    let mut fields = Map::new();
     while data.bytes().next() != Some(b'g') {
         let key = parse_string(data)?;
         let value = parse_object(data)?;
@@ -241,7 +240,7 @@ fn parse_struct<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 fn parse_class<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'c'.parse_next(data)?;
     let name = parse_string(data)?;
-    let mut fields = BTreeMap::new();
+    let mut fields = Map::new();
     while data.bytes().next() != Some(b'g') {
         let key = parse_string(data)?;
         let value = parse_object(data)?;
