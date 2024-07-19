@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use vecmap::VecMap as BTreeMap;
 
 use ordered_float::OrderedFloat;
 

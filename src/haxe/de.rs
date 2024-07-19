@@ -1,5 +1,7 @@
+use std::sync::RwLock;
 use std::{borrow::Cow, rc::Rc};
-use std::{collections::BTreeMap, sync::RwLock};
+
+use vecmap::VecMap as BTreeMap;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use ordered_float::OrderedFloat;

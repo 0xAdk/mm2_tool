@@ -1,9 +1,10 @@
 use std::{
     borrow::Cow,
-    collections::BTreeMap,
     fmt::{self, Write},
     hash::{DefaultHasher, Hash, Hasher},
 };
+
+use vecmap::VecMap as BTreeMap;
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 

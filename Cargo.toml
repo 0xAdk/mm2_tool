@@ -17,6 +17,7 @@ winnow = "0.6.13"
 serde = { version = "1.0.204", features = ["derive"] }
 ordered-float = { version = "4.2.1", features = ["serde"] }
 serde_json = { version = "1.0.120", optional = true }
+vecmap-rs = { version = "0.2.1", features = ["serde"] }
 
 [features]
 default = ["export-json"]

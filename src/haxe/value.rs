@@ -1,9 +1,11 @@
-use std::{borrow::Cow, collections::BTreeMap, fmt::Debug};
+use std::{borrow::Cow, fmt::Debug};
+
+use vecmap::VecMap as BTreeMap;
 
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Value<'a> {
     Null,
 
