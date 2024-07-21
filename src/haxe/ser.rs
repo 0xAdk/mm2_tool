@@ -7,7 +7,7 @@ use std::{
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use vecmap::VecMap as Map;
 
-use super::value::Value;
+use super::value::{Float, Value};
 
 #[derive(Debug, Clone, Default)]
 struct State {
@@ -39,10 +39,10 @@ fn serialize_value<'a>(state: &mut State, value: &'a Value<'a>) -> fmt::Result {
         Value::Bool(false) => output.write_char('f'),
         Value::Int(0) => output.write_char('z'),
         Value::Int(n) => output.write_fmt(format_args!("i{n}")),
-        Value::Float(n) if n.is_nan() => output.write_char('k'),
-        Value::Float(n) if n.is_sign_positive() && n.is_infinite() => output.write_char('p'),
-        Value::Float(n) if n.is_sign_negative() && n.is_infinite() => output.write_char('m'),
-        Value::Float(n) => output.write_fmt(format_args!("d{n}")),
+        Value::Float(Float::Nan) => output.write_char('k'),
+        Value::Float(Float::PositiveInfinity) => output.write_char('p'),
+        Value::Float(Float::NegativeInfinity) => output.write_char('m'),
+        Value::Float(Float::Normal(n)) => output.write_fmt(format_args!("d{}", n.as_f64())),
         Value::String(s) => serialize_string(state, s),
         Value::Date(s) => serialize_date(state, s),
         Value::Bytes(bytes) => serialize_bytes(state, bytes),

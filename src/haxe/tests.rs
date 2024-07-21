@@ -1,10 +1,10 @@
-use ordered_float::OrderedFloat;
 use vecmap::VecMap as Map;
 
 use super::*;
 
 mod roundtrip {
     use super::*;
+    use value::Float;
 
     fn roundtrip_helper(data: &str, expected_values: &Vec<Value>) {
         let values = from_str(data).unwrap();
@@ -45,20 +45,20 @@ mod roundtrip {
 
     #[test]
     fn float_nan() {
-        roundtrip_helper("k", &vec![Value::Float(OrderedFloat(f64::NAN))]);
+        roundtrip_helper("k", &vec![Value::Float(Float::new(f64::NAN))]);
     }
 
     #[test]
     fn float_inf() {
-        roundtrip_helper("p", &vec![Value::Float(OrderedFloat(f64::INFINITY))]);
-        roundtrip_helper("m", &vec![Value::Float(OrderedFloat(-f64::INFINITY))]);
+        roundtrip_helper("p", &vec![Value::Float(Float::new(f64::INFINITY))]);
+        roundtrip_helper("m", &vec![Value::Float(Float::new(-f64::INFINITY))]);
     }
 
     #[test]
     fn float() {
-        roundtrip_helper("d1", &vec![Value::Float(OrderedFloat(1.0))]);
-        roundtrip_helper("d0.5", &vec![Value::Float(OrderedFloat(0.5))]);
-        roundtrip_helper("d0.123", &vec![Value::Float(OrderedFloat(0.123))]);
+        roundtrip_helper("d1", &vec![Value::Float(Float::new(1.0))]);
+        roundtrip_helper("d0.5", &vec![Value::Float(Float::new(0.5))]);
+        roundtrip_helper("d0.123", &vec![Value::Float(Float::new(0.123))]);
     }
 
     #[test]
@@ -174,7 +174,7 @@ mod roundtrip {
             &vec![Value::StringMap({
                 let mut map = Map::new();
                 map.insert("a".into(), Value::Int(12));
-                map.insert("b".into(), Value::Float(OrderedFloat(2.71)));
+                map.insert("b".into(), Value::Float(Float::new(2.71)));
                 map.insert("c".into(), Value::Bool(false));
                 map
             })],
@@ -190,7 +190,7 @@ mod roundtrip {
             &vec![Value::IntMap({
                 let mut map = Map::new();
                 map.insert(1_i32, Value::Int(12));
-                map.insert(2_i32, Value::Float(OrderedFloat(2.71)));
+                map.insert(2_i32, Value::Float(Float::new(2.71)));
                 map.insert(3_i32, Value::Bool(false));
                 map
             })],
@@ -216,7 +216,7 @@ mod roundtrip {
 
                 let mut map = Map::new();
                 map.insert(make_struct_key("a"), Value::Int(12));
-                map.insert(make_struct_key("b"), Value::Float(OrderedFloat(2.71)));
+                map.insert(make_struct_key("b"), Value::Float(Float::new(2.71)));
                 map.insert(make_struct_key("c"), Value::Bool(false));
                 map
             })],
@@ -369,6 +369,7 @@ mod roundtrip {
 #[cfg(feature = "export-json")]
 mod roundtrip_json {
     use super::*;
+    use value::Float;
 
     fn roundtrip_json_helper(data: &str, expected_values: &Vec<Value>) {
         let mut values = from_str(data).unwrap();
@@ -413,20 +414,20 @@ mod roundtrip_json {
 
     #[test]
     fn float_nan() {
-        roundtrip_json_helper("k", &vec![Value::Float(OrderedFloat(f64::NAN))]);
+        roundtrip_json_helper("k", &vec![Value::Float(Float::new(f64::NAN))]);
     }
 
     #[test]
     fn float_inf() {
-        roundtrip_json_helper("p", &vec![Value::Float(OrderedFloat(f64::INFINITY))]);
-        roundtrip_json_helper("m", &vec![Value::Float(OrderedFloat(-f64::INFINITY))]);
+        roundtrip_json_helper("p", &vec![Value::Float(Float::new(f64::INFINITY))]);
+        roundtrip_json_helper("m", &vec![Value::Float(Float::new(-f64::INFINITY))]);
     }
 
     #[test]
     fn float() {
-        roundtrip_json_helper("d1", &vec![Value::Float(OrderedFloat(1.0))]);
-        roundtrip_json_helper("d0.5", &vec![Value::Float(OrderedFloat(0.5))]);
-        roundtrip_json_helper("d0.123", &vec![Value::Float(OrderedFloat(0.123))]);
+        roundtrip_json_helper("d1", &vec![Value::Float(Float::new(1.0))]);
+        roundtrip_json_helper("d0.5", &vec![Value::Float(Float::new(0.5))]);
+        roundtrip_json_helper("d0.123", &vec![Value::Float(Float::new(0.123))]);
     }
 
     #[test]
@@ -542,7 +543,7 @@ mod roundtrip_json {
             &vec![Value::StringMap({
                 let mut map = Map::new();
                 map.insert("a".into(), Value::Int(12));
-                map.insert("b".into(), Value::Float(OrderedFloat(2.71)));
+                map.insert("b".into(), Value::Float(Float::new(2.71)));
                 map.insert("c".into(), Value::Bool(false));
                 map
             })],
@@ -558,7 +559,7 @@ mod roundtrip_json {
             &vec![Value::IntMap({
                 let mut map = Map::new();
                 map.insert(1_i32, Value::Int(12));
-                map.insert(2_i32, Value::Float(OrderedFloat(2.71)));
+                map.insert(2_i32, Value::Float(Float::new(2.71)));
                 map.insert(3_i32, Value::Bool(false));
                 map
             })],
@@ -584,7 +585,7 @@ mod roundtrip_json {
 
                 let mut map = Map::new();
                 map.insert(make_struct_key("a"), Value::Int(12));
-                map.insert(make_struct_key("b"), Value::Float(OrderedFloat(2.71)));
+                map.insert(make_struct_key("b"), Value::Float(Float::new(2.71)));
                 map.insert(make_struct_key("c"), Value::Bool(false));
                 map
             })],

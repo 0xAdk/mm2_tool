@@ -2,7 +2,6 @@ use std::sync::RwLock;
 use std::{borrow::Cow, rc::Rc};
 
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use ordered_float::OrderedFloat;
 use vecmap::VecMap as Map;
 use winnow::{
     ascii::{dec_int, dec_uint, float},
@@ -12,7 +11,7 @@ use winnow::{
     Parser, Stateful,
 };
 
-use super::value::Value;
+use super::value::{Float, Value};
 
 #[derive(Debug, Default)]
 struct ParserState<'a> {
@@ -45,15 +44,15 @@ fn parse_object<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
         'd' => parse_float(data)?,
         'k' => {
             data.input = &data[1..];
-            Value::Float(OrderedFloat(f64::NAN))
+            Value::Float(Float::Nan)
         }
         'm' => {
             data.input = &data[1..];
-            Value::Float(OrderedFloat(f64::NEG_INFINITY))
+            Value::Float(Float::NegativeInfinity)
         }
         'p' => {
             data.input = &data[1..];
-            Value::Float(OrderedFloat(f64::INFINITY))
+            Value::Float(Float::PositiveInfinity)
         }
         't' => {
             data.input = &data[1..];
@@ -90,7 +89,7 @@ fn parse_int<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
 
 fn parse_float<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     'd'.parse_next(data)?;
-    Ok(Value::Float(float.parse_next(data)?))
+    float.map(Float::new).map(Value::Float).parse_next(data)
 }
 
 fn parse_string<'a>(data: &mut Input<'a>) -> winnow::PResult<Cow<'a, str>> {
