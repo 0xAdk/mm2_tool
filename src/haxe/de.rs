@@ -11,7 +11,7 @@ use winnow::{
     Parser, Stateful,
 };
 
-use super::value::{Float, Value};
+use super::value::{float::Float, Value};
 
 #[derive(Debug, Default)]
 struct ParserState<'a> {

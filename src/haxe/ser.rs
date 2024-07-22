@@ -7,7 +7,7 @@ use std::{
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use vecmap::VecMap as Map;
 
-use super::value::{Float, Value};
+use super::value::{float::Float, Value};
 
 #[derive(Debug, Clone, Default)]
 struct State {

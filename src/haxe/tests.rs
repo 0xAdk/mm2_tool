@@ -4,7 +4,7 @@ use super::*;
 
 mod roundtrip {
     use super::*;
-    use value::Float;
+    use value::float::Float;
 
     fn roundtrip_helper(data: &str, expected_values: &Vec<Value>) {
         let values = from_str(data).unwrap();
@@ -369,7 +369,7 @@ mod roundtrip {
 #[cfg(feature = "export-json")]
 mod roundtrip_json {
     use super::*;
-    use value::Float;
+    use value::float::Float;
 
     fn roundtrip_json_helper(data: &str, expected_values: &Vec<Value>) {
         let mut values = from_str(data).unwrap();
