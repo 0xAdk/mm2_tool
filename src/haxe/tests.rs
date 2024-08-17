@@ -73,9 +73,9 @@ mod roundtrip {
 
         // encoded chars (sub control codes 0x00..=0x1F && 0x7F)
         roundtrip_helper(
-        "y87:%21%22%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3C%3D%3E%3F%40%5B%5C%5D%5E%60%7B%7C%7D%7E",
-        &vec![Value::String("!\"#$%&'()*+,/:;<=>?@[\\]^`{|}~".into())],
-    );
+            "y87:%21%22%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3C%3D%3E%3F%40%5B%5C%5D%5E%60%7B%7C%7D%7E",
+            &vec![Value::String("!\"#$%&'()*+,/:;<=>?@[\\]^`{|}~".into())],
+        );
     }
 
     #[test]
@@ -442,9 +442,9 @@ mod roundtrip_json {
 
         // encoded chars (sub control codes 0x00..=0x1F && 0x7F)
         roundtrip_json_helper(
-        "y87:%21%22%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3C%3D%3E%3F%40%5B%5C%5D%5E%60%7B%7C%7D%7E",
-        &vec![Value::String("!\"#$%&'()*+,/:;<=>?@[\\]^`{|}~".into())],
-    );
+            "y87:%21%22%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3C%3D%3E%3F%40%5B%5C%5D%5E%60%7B%7C%7D%7E",
+            &vec![Value::String("!\"#$%&'()*+,/:;<=>?@[\\]^`{|}~".into())],
+        );
     }
 
     #[test]

@@ -46,4 +46,3 @@ impl Normal {
         self.0.into_inner()
     }
 }
-
