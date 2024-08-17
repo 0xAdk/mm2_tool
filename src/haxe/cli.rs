@@ -39,7 +39,7 @@ pub enum FileFormat {
     #[default]
     Auto,
 
-    None,
+    Debug,
     #[cfg(feature = "export-json")]
     Json,
 }

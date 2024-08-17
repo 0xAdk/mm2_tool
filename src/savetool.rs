@@ -51,7 +51,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             format,
         } => {
             let format = haxe::FileFormat::guess(&file, format);
-            if let haxe::FileFormat::None = format {
+            if let haxe::FileFormat::Debug = format {
                 eprintln!("Error: a format is required when serializing");
                 return;
             }
@@ -59,7 +59,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let data = std::fs::read(file).unwrap();
 
             let value: Vec<haxe::Value> = match format {
-                haxe::FileFormat::None => unreachable!(),
+                haxe::FileFormat::Debug => unreachable!(),
 
                 #[cfg(feature = "export-json")]
                 haxe::FileFormat::Json => serde_json::from_slice(&data).unwrap(),
@@ -99,7 +99,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let string_spot: String;
 
             let bytes = match haxe::FileFormat::guess(&output, format) {
-                haxe::FileFormat::None => {
+                haxe::FileFormat::Debug => {
                     string_spot = format!("{obj:#?}");
                     string_spot.as_bytes()
                 }

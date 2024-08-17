@@ -23,7 +23,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             format,
         } => {
             let format = FileFormat::guess(&file, format);
-            if let FileFormat::None = format {
+            if let FileFormat::Debug = format {
                 eprintln!("Error: a format is required when serializing");
                 return;
             }
@@ -31,7 +31,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             let data = std::fs::read(file).unwrap();
 
             let value: Vec<Value> = match format {
-                FileFormat::None => unreachable!(),
+                FileFormat::Debug => unreachable!(),
 
                 #[cfg(feature = "export-json")]
                 FileFormat::Json => serde_json::from_slice(&data).unwrap(),
@@ -53,7 +53,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             let string_spot: String;
 
             let bytes = match FileFormat::guess(&output, format) {
-                FileFormat::None => {
+                FileFormat::Debug => {
                     string_spot = format!("{obj:#?}");
                     string_spot.as_bytes()
                 }
@@ -72,7 +72,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
 
 #[derive(Debug, Clone)]
 pub enum FileFormat {
-    None,
+    Debug,
     #[cfg(feature = "export-json")]
     Json,
 }
@@ -86,7 +86,7 @@ impl FileFormat {
             #[cfg(feature = "export-json")]
             (_, cli::FileFormat::Json) | (Some("json"), Auto) => FileFormat::Json,
 
-            (_, cli::FileFormat::None | Auto) => FileFormat::None,
+            (_, cli::FileFormat::Debug | Auto) => FileFormat::Debug,
         }
     }
 }
