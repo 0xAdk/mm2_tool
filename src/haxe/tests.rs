@@ -63,6 +63,8 @@ mod roundtrip {
 
     #[test]
     fn string() {
+        roundtrip_helper("y0:", &vec![Value::String("".into())]);
+
         // non-encoded chars
         roundtrip_helper(
             "y65:-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz",
@@ -452,6 +454,8 @@ mod roundtrip_json {
 
     #[test]
     fn string() {
+        roundtrip_json_helper("y0:", &vec![Value::String("".into())]);
+
         // non-encoded chars
         roundtrip_json_helper(
             "y65:-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz",
