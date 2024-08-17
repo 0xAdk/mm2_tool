@@ -22,7 +22,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             output,
             format,
         } => {
-            let format = FileFormat::guess(&file, format);
+            let format = FileFormat::guess(format, &file);
             if let FileFormat::Debug = format {
                 eprintln!("Error: a format is required when serializing");
                 return;
@@ -52,7 +52,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             let byte_vec_spot: Vec<u8>;
             let string_spot: String;
 
-            let bytes = match FileFormat::guess(&output, format) {
+            let bytes = match FileFormat::guess(format, &output) {
                 FileFormat::Debug => {
                     string_spot = format!("{obj:#?}");
                     string_spot.as_bytes()
@@ -78,15 +78,19 @@ pub enum FileFormat {
 }
 
 impl FileFormat {
-    pub fn guess(output: &std::path::Path, format: cli::FileFormat) -> FileFormat {
+    pub fn guess(format: cli::FileFormat, output: &std::path::Path) -> FileFormat {
         use cli::FileFormat::Auto;
 
         let extension = output.extension().and_then(|e| e.to_str());
-        match (extension, format) {
+        match (format, extension) {
             #[cfg(feature = "export-json")]
-            (_, cli::FileFormat::Json) | (Some("json"), Auto) => FileFormat::Json,
+            (cli::FileFormat::Json, _) => FileFormat::Json,
+            (cli::FileFormat::Debug, _) => FileFormat::Debug,
 
-            (_, cli::FileFormat::Debug | Auto) => FileFormat::Debug,
+            #[cfg(feature = "export-json")]
+            (Auto, Some("json")) => FileFormat::Json,
+            (Auto, Some("debug")) => FileFormat::Debug,
+            (Auto, _) => FileFormat::Debug,
         }
     }
 }

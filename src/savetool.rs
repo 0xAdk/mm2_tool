@@ -50,7 +50,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             output,
             format,
         } => {
-            let format = haxe::FileFormat::guess(&file, format);
+            let format = haxe::FileFormat::guess(format, &file);
             if let haxe::FileFormat::Debug = format {
                 eprintln!("Error: a format is required when serializing");
                 return;
@@ -98,7 +98,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let byte_vec_spot: Vec<u8>;
             let string_spot: String;
 
-            let bytes = match haxe::FileFormat::guess(&output, format) {
+            let bytes = match haxe::FileFormat::guess(format, &output) {
                 haxe::FileFormat::Debug => {
                     string_spot = format!("{obj:#?}");
                     string_spot.as_bytes()
