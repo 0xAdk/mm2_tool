@@ -342,7 +342,27 @@ mod roundtrip {
 
     #[test]
     fn custom() {
-        todo!()
+        roundtrip_helper(
+            "Cy0:ahahg",
+            &vec![Value::Custom {
+                name: "".into(),
+                fields: Vec::new(),
+                values: Vec::new(),
+            }],
+        );
+
+        roundtrip_helper(
+            "Cy3:fooay1:ay1:by1:chai12d2.71fhg",
+            &vec![Value::Custom {
+                name: "foo".into(),
+                fields: vec!["a".into(), "b".into(), "c".into()],
+                values: vec![
+                    Value::Int(12),
+                    Value::Float(Float::new(2.71)),
+                    Value::Bool(false),
+                ],
+            }],
+        );
     }
 
     #[test]
@@ -711,7 +731,27 @@ mod roundtrip_json {
 
     #[test]
     fn custom() {
-        todo!()
+        roundtrip_json_helper(
+            "Cy0:ahahg",
+            &vec![Value::Custom {
+                name: "".into(),
+                fields: Vec::new(),
+                values: Vec::new(),
+            }],
+        );
+
+        roundtrip_json_helper(
+            "Cy3:fooay1:ay1:by1:chai12d2.71fhg",
+            &vec![Value::Custom {
+                name: "foo".into(),
+                fields: vec!["a".into(), "b".into(), "c".into()],
+                values: vec![
+                    Value::Int(12),
+                    Value::Float(Float::new(2.71)),
+                    Value::Bool(false),
+                ],
+            }],
+        );
     }
 
     #[test]
