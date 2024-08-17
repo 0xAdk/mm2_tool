@@ -76,7 +76,7 @@ fn serialize_value<'a>(state: &mut State, value: &'a Value<'a>) -> fmt::Result {
                     .as_slice(),
             )?;
             serialize_array(state, values)?;
-            state.output.write_char('h')?;
+            state.output.write_char('g')?;
             Ok(())
         }
     }
