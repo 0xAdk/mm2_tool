@@ -1,10 +1,15 @@
 use clap::Subcommand;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use winnow::{
+    combinator::{alt, delimited, repeat},
+    token::one_of,
+    PResult, Parser,
+};
 
 use crate::haxe;
 use crate::xxtea;
 
+use std::borrow::Cow;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -85,10 +90,10 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let data = std::fs::read(file).unwrap();
 
             let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
-            let mut data =
+            let data =
                 xxtea::decrypt_with_padding(data, key).unwrap_or_else(|err| panic!("{err:?}"));
 
-            let save_file = SaveFile::load(&mut data);
+            let save_file = SaveFile::load(&data);
 
             let mut output = std::fs::File::create(&output_path).unwrap();
             match haxe::FileFormat::guess(format, &output_path) {
@@ -109,7 +114,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SaveFile<'a> {
-    version: std::borrow::Cow<'a, str>,
+    version: Cow<'a, str>,
     values: Vec<haxe::Value<'a>>,
 }
 
@@ -122,13 +127,17 @@ impl<'a> SaveFile<'a> {
         )
     }
 
-    fn load(data: &'a mut Vec<u8>) -> Self {
-        let version_tag_end = data.iter().position(|c| *c == b']').unwrap();
-        let _ = data.drain(..=version_tag_end);
+    fn load(data: &'a [u8]) -> Self {
+        let input = &mut std::str::from_utf8(data).unwrap();
 
         Self {
-            version: "4.0.105".into(),
-            values: haxe::from_str(std::str::from_utf8(data).unwrap()).unwrap(),
+            version: Self::parse_version_tag(input).unwrap().into(),
+            values: haxe::from_str(input).unwrap(),
         }
+    }
+
+    fn parse_version_tag(input: &mut &str) -> PResult<String> {
+        let version = repeat(1.., alt((one_of('0'..='9'), '.')));
+        delimited('[', version, ']').parse_next(input)
     }
 }
