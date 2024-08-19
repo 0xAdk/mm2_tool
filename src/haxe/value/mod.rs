@@ -52,7 +52,7 @@ impl Debug for Value<'_> {
             Value::Null => f.write_str("null"),
             Value::Bool(value) => write!(f, "{value:?}"),
             Value::Int(value) => write!(f, "{value:?}"),
-            Value::Float(value) => write!(f, "{value:?}"),
+            Value::Float(value) => write!(f, "{:?}", value.as_f64()),
             Value::String(value) | Value::Date(value) => write!(f, "{value:?}"),
             Value::Bytes(bytes) => write!(f, "{bytes:?}"),
             Value::Array(value) | Value::List(value) => {
