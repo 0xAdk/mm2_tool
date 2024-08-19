@@ -228,7 +228,12 @@ fn serialize_array<'a>(
                 null_count += 1;
                 value = values.next();
             }
-            state.output.write_fmt(format_args!("u{null_count}"))?;
+
+            if null_count == 1 {
+                state.output.write_fmt(format_args!("n"))?;
+            } else {
+                state.output.write_fmt(format_args!("u{null_count}"))?;
+            }
         }
 
         match value {
