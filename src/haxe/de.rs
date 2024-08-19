@@ -327,10 +327,10 @@ fn parse_custom<'a>(data: &mut Input<'a>) -> winnow::PResult<Value<'a>> {
     };
     'g'.parse_next(data)?;
 
+    assert_eq!(fields.len(), values.len());
     let obj = Value::Custom {
         name,
-        fields,
-        values,
+        fields: fields.into_iter().zip(values).collect(),
     };
     data.state.write().unwrap().object_cache.push(obj.clone());
     Ok(obj)

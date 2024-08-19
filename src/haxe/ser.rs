@@ -59,23 +59,18 @@ fn serialize_value<'a>(state: &mut State, value: &'a Value<'a>) -> fmt::Result {
             fields,
         } => serialize_enum(state, name, constructor, fields),
         Value::Exception(_) => todo!(),
-        Value::Custom {
-            name,
-            fields,
-            values,
-        } => {
+        Value::Custom { name, fields } => {
             state.output.write_char('C')?;
             serialize_string(state, name)?;
+
             serialize_array(
                 state,
-                fields
-                    .iter()
-                    .cloned()
-                    .map(Value::String)
-                    .collect::<Vec<_>>()
-                    .as_slice(),
+                &fields
+                    .keys()
+                    .map(|v| Value::String(v.clone()))
+                    .collect::<Vec<_>>(),
             )?;
-            serialize_array(state, values)?;
+            serialize_array(state, fields.values())?;
             state.output.write_char('g')?;
             Ok(())
         }
@@ -217,9 +212,13 @@ fn serialize_list(state: &mut State, values: &[Value]) -> fmt::Result {
     Ok(())
 }
 
-fn serialize_array(state: &mut State, values: &[Value]) -> fmt::Result {
+fn serialize_array<'a>(
+    state: &'a mut State,
+    values: impl IntoIterator<Item = &'a Value<'a>>,
+) -> fmt::Result {
+    let mut values = values.into_iter();
+
     state.output.write_char('a')?;
-    let mut values = values.iter();
     loop {
         let mut value = values.next();
 

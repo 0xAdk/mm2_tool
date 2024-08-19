@@ -42,8 +42,7 @@ pub enum Value<'a> {
     Exception(Box<Value<'a>>),
     Custom {
         name: Cow<'a, str>,
-        fields: Vec<Cow<'a, str>>,
-        values: Vec<Value<'a>>,
+        fields: Map<Cow<'a, str>, Value<'a>>,
     },
 }
 
@@ -59,19 +58,6 @@ impl Debug for Value<'_> {
             Value::Array(value) | Value::List(value) => {
                 f.debug_list().entries(value.iter()).finish()
             }
-            Value::Custom {
-                name,
-                fields,
-                values,
-            } => {
-                f.write_str("class ")?;
-                let mut f = f.debug_struct(name);
-                let entries = fields.iter().zip(values.iter());
-                for (field, value) in entries {
-                    f.field(field, value);
-                }
-                f.finish()
-            }
             Value::StringMap(value) => f.debug_map().entries(value.iter()).finish(),
             Value::IntMap(value) => f.debug_map().entries(value.iter()).finish(),
             Value::ObjectMap(value) => f.debug_map().entries(value.iter()).finish(),
@@ -83,7 +69,7 @@ impl Debug for Value<'_> {
                 }
                 f.finish()
             }
-            Value::Class { name, fields } => {
+            Value::Class { name, fields } | Value::Custom { name, fields } => {
                 f.write_str("class ")?;
                 let mut f = f.debug_struct(name);
                 for (field, value) in fields {

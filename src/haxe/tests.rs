@@ -348,8 +348,7 @@ mod roundtrip {
             "Cy0:ahahg",
             &vec![Value::Custom {
                 name: "".into(),
-                fields: Vec::new(),
-                values: Vec::new(),
+                fields: Map::new(),
             }],
         );
 
@@ -357,12 +356,13 @@ mod roundtrip {
             "Cy3:fooay1:ay1:by1:chai12d2.71fhg",
             &vec![Value::Custom {
                 name: "foo".into(),
-                fields: vec!["a".into(), "b".into(), "c".into()],
-                values: vec![
-                    Value::Int(12),
-                    Value::Float(Float::new(2.71)),
-                    Value::Bool(false),
-                ],
+                fields: {
+                    let mut map = Map::new();
+                    map.insert("a".into(), Value::Int(12));
+                    map.insert("b".into(), Value::Float(Float::new(2.71)));
+                    map.insert("c".into(), Value::Bool(false));
+                    map
+                },
             }],
         );
     }
@@ -739,8 +739,7 @@ mod roundtrip_json {
             "Cy0:ahahg",
             &vec![Value::Custom {
                 name: "".into(),
-                fields: Vec::new(),
-                values: Vec::new(),
+                fields: Map::new(),
             }],
         );
 
@@ -748,12 +747,13 @@ mod roundtrip_json {
             "Cy3:fooay1:ay1:by1:chai12d2.71fhg",
             &vec![Value::Custom {
                 name: "foo".into(),
-                fields: vec!["a".into(), "b".into(), "c".into()],
-                values: vec![
-                    Value::Int(12),
-                    Value::Float(Float::new(2.71)),
-                    Value::Bool(false),
-                ],
+                fields: {
+                    let mut map = Map::new();
+                    map.insert("a".into(), Value::Int(12));
+                    map.insert("b".into(), Value::Float(Float::new(2.71)));
+                    map.insert("c".into(), Value::Bool(false));
+                    map
+                },
             }],
         );
     }
