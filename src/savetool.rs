@@ -17,7 +17,7 @@ pub const MM2_SAVE_KEY: &str = "HXl;kjsaf4982097";
 
 #[derive(Subcommand)]
 pub enum Cli {
-    /// Manege mm2 save games
+    /// Manage mm2 save files
     Savetool {
         #[command(subcommand)]
         command: Command,
@@ -26,7 +26,7 @@ pub enum Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    Save {
+    Encode {
         #[arg(short, long)]
         output: PathBuf,
 
@@ -36,7 +36,7 @@ pub enum Command {
         file: PathBuf,
     },
 
-    Load {
+    Decode {
         #[arg(short, long)]
         output: PathBuf,
 
@@ -53,7 +53,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             not(feature = "export-json"),
             allow(irrefutable_let_patterns, unreachable_code, unused_variables)
         )]
-        Command::Save {
+        Command::Encode {
             file,
             output,
             format,
@@ -73,7 +73,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
                 haxe::FileFormat::Json => serde_json::from_slice(&data).unwrap(),
             };
 
-            let data = SaveFile::save(&save_file);
+            let data = SaveFile::encode(&save_file);
 
             let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
             let data = xxtea::encrypt_with_padding(data.into_bytes(), key)
@@ -82,7 +82,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             std::fs::write(output, data).unwrap();
         }
 
-        Command::Load {
+        Command::Decode {
             file,
             output: output_path,
             format,
@@ -93,7 +93,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
             let data =
                 xxtea::decrypt_with_padding(data, key).unwrap_or_else(|err| panic!("{err:?}"));
 
-            let save_file = SaveFile::load(&data);
+            let save_file = SaveFile::decode(&data);
 
             let mut output = std::fs::File::create(&output_path).unwrap();
             match haxe::FileFormat::guess(format, &output_path) {
@@ -119,7 +119,7 @@ struct SaveFile<'a> {
 }
 
 impl<'a> SaveFile<'a> {
-    fn save(save_file: &Self) -> String {
+    fn encode(save_file: &Self) -> String {
         format!(
             "[{version}]{hxon}",
             version = save_file.version,
@@ -127,7 +127,7 @@ impl<'a> SaveFile<'a> {
         )
     }
 
-    fn load(data: &'a [u8]) -> Self {
+    fn decode(data: &'a [u8]) -> Self {
         let input = &mut std::str::from_utf8(data).unwrap();
 
         Self {

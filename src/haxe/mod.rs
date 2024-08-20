@@ -17,7 +17,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             not(feature = "export-json"),
             allow(irrefutable_let_patterns, unreachable_code, unused_variables)
         )]
-        Command::Serialize {
+        Command::Encode {
             file,
             output,
             format,
@@ -40,7 +40,7 @@ pub fn run(Cli::Haxe { command }: Cli) {
             std::fs::write(output, to_string(&value)).unwrap();
         }
 
-        Command::Deserialize {
+        Command::Decode {
             file,
             output,
             format,

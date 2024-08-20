@@ -13,7 +13,7 @@ pub enum Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    Serialize {
+    Encode {
         #[arg(short, long)]
         output: PathBuf,
 
@@ -23,7 +23,7 @@ pub enum Command {
         file: PathBuf,
     },
 
-    Deserialize {
+    Decode {
         #[arg(short, long)]
         output: PathBuf,
 
