@@ -3,4 +3,5 @@ pub mod xxtea;
 
 pub mod crypt;
 pub mod haxe;
+pub mod manifest;
 pub mod savetool;

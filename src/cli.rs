@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 use crate::crypt;
 use crate::haxe;
+use crate::manifest;
 use crate::savetool;
 
 #[derive(Parser)]
@@ -25,6 +26,9 @@ pub enum Command {
 
     #[command(flatten)]
     Savetool(savetool::Cli),
+
+    #[command(flatten)]
+    Manifest(manifest::Cli),
 }
 
 pub fn run() {
@@ -34,5 +38,6 @@ pub fn run() {
         Command::Crypt(cli) => crypt::run(cli),
         Command::Haxe(cli) => haxe::run(cli),
         Command::Savetool(cli) => savetool::run(cli),
+        Command::Manifest(cli) => manifest::run(cli),
     }
 }
