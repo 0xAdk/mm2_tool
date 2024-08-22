@@ -1,8 +1,8 @@
 use clap::{Parser, Subcommand};
 
-use crate::crypt::Cli as CryptCli;
-use crate::haxe::Cli as HaxeCli;
-use crate::savetool::Cli as SaveToolCli;
+use crate::crypt;
+use crate::haxe;
+use crate::savetool;
 
 #[derive(Parser)]
 #[command(
@@ -18,11 +18,21 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Command {
     #[command(flatten)]
-    Crypt(CryptCli),
+    Crypt(crypt::Cli),
 
     #[command(flatten)]
-    Haxe(HaxeCli),
+    Haxe(haxe::Cli),
 
     #[command(flatten)]
-    Savetool(SaveToolCli),
+    Savetool(savetool::Cli),
+}
+
+pub fn run() {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Command::Crypt(cli) => crypt::run(cli),
+        Command::Haxe(cli) => haxe::run(cli),
+        Command::Savetool(cli) => savetool::run(cli),
+    }
 }
