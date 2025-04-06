@@ -13,7 +13,7 @@ use std::borrow::Cow;
 use std::io::Write;
 use std::path::PathBuf;
 
-pub const MM2_SAVE_KEY: &str = "HXl;kjsaf4982097";
+pub const MM2_SAVE_KEY: &[u8] = b"HXl;kjsaf4982097";
 
 #[derive(Subcommand)]
 pub enum Cli {
@@ -75,7 +75,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
 
             let data = SaveFile::encode(&save_file);
 
-            let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
+            let key = MM2_SAVE_KEY.try_into().unwrap();
             let data = xxtea::encrypt_with_padding(data.into_bytes(), key)
                 .unwrap_or_else(|err| panic!("{err:?}"));
 
@@ -89,7 +89,7 @@ pub fn run(Cli::Savetool { command }: Cli) {
         } => {
             let data = std::fs::read(file).unwrap();
 
-            let key = MM2_SAVE_KEY.as_bytes().try_into().unwrap();
+            let key = MM2_SAVE_KEY.try_into().unwrap();
             let data =
                 xxtea::decrypt_with_padding(data, key).unwrap_or_else(|err| panic!("{err:?}"));
 
