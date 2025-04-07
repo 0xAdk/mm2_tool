@@ -7,6 +7,9 @@ use crate::haxe;
 
 #[derive(clap::Subcommand)]
 pub enum Cli {
+    // WIP: hidden since I never finished this subcommand
+    #[command(hide = true)]
+    // TODO: Figure out what's the current utility of this subcommand
     /// Manage mm2 asset manifest
     Manifest {
         #[command(subcommand)]
