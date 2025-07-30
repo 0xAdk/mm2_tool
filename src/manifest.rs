@@ -3,6 +3,8 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+use path_slash::PathExt;
+
 use crate::haxe;
 
 #[derive(clap::Subcommand)]
@@ -45,7 +47,8 @@ pub fn run(Cli::Manifest { command }: Cli) {
                 }
             };
 
-            let file = haxe::Value::String(file_path.to_string_lossy().to_string().into());
+            let slash_file_path = Cow::Owned(file_path.to_slash_lossy().into_owned());
+            let file = haxe::Value::String(slash_file_path);
             let file_type = haxe::Value::String(file_type.into());
 
             manifest_values.push(haxe::Value::Struct {
